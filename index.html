@@ -1,0 +1,2043 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Catchment Area Service Mapping — Interactive Dashboard</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- DataTables -->
+  <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+
+  <style>
+    :root {
+      --primary-color: #2c3e50;
+      --secondary-color: #3498db;
+      --accent-color: #1abc9c;
+      --light-color: #ecf0f1;
+      --dark-color: #34495e;
+    }
+    
+    body { 
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      min-height: 100vh;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-size: 0.9rem;
+    }
+    
+    .dashboard-header {
+  background: linear-gradient(to right, rgb(27, 101, 124), rgb(20, 75, 92));
+  color: white;
+  padding: 1rem 0;
+  border-radius: 0 0 10px 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  margin-bottom: 1.5rem;
+}
+    
+    .card { 
+      border: none;
+      border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(21, 33, 62, 0.08);
+      transition: transform 0.3s, box-shadow 0.3s;
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+    
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(21, 33, 62, 0.12);
+    }
+    
+    .card-header {
+      background: linear-gradient(to right, var(--secondary-color), var(--accent-color));
+      color: white;
+      border-radius: 8px 8px 0 0 !important;
+      padding: 0.75rem 1rem;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    
+    #detailModal .modal-dialog { 
+      max-width: 1400px; 
+    }
+    
+    #modalMap, #mainMap { 
+      height: 400px; 
+      width: 100%; 
+      border-radius: 6px;
+      z-index: 1;
+    }
+    
+    .file-fallback { 
+      display:flex; 
+      gap:8px; 
+      align-items:center; 
+    }
+    
+    .small-muted { 
+      font-size:0.8rem; 
+      color:#6c757d; 
+    }
+    
+    .btn-primary {
+      background: var(--secondary-color);
+      border: none;
+      border-radius: 5px;
+      padding: 0.4rem 1rem;
+      font-weight: 500;
+      font-size: 0.85rem;
+    }
+    
+    .btn-primary:hover {
+      background: #2980b9;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .nav-tabs .nav-link {
+      color: var(--dark-color);
+      font-weight: 500;
+      border-radius: 6px 6px 0 0;
+      font-size: 0.85rem;
+      padding: 0.5rem 0.75rem;
+    }
+    
+    .nav-tabs .nav-link.active {
+      background: var(--light-color);
+      color: var(--primary-color);
+      border-bottom: 3px solid var(--accent-color);
+    }
+    
+    .stats-card {
+      text-align: center;
+      padding: 1rem;
+      border-radius: 8px;
+      background: white;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.06);
+      transition: all 0.3s ease;
+      height: 100%;
+    }
+    
+    .stats-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    
+    .stats-number {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--secondary-color);
+      margin-bottom: 0.25rem;
+    }
+    
+    .stats-label {
+      font-size: 0.8rem;
+      color: var(--dark-color);
+      font-weight: 500;
+    }
+    
+    .feature-icon {
+      font-size: 1.2rem;
+      margin-right: 8px;
+      color: var(--accent-color);
+    }
+    
+    .footer {
+      margin-top: 1.5rem;
+      padding: 0.75rem 0;
+      color: var(--dark-color);
+      font-size: 0.8rem;
+    }
+    
+    .map-container {
+      position: relative;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+    }
+    
+    .map-overlay {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: rgba(255,255,255,0.95);
+      padding: 6px;
+      border-radius: 6px;
+      z-index: 1000;
+      box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+    }
+    
+    .table-hover tbody tr:hover {
+      background-color: rgba(52, 152, 219, 0.08);
+      cursor: pointer;
+      transform: scale(1.005);
+      transition: all 0.2s ease;
+    }
+    
+    .service-card {
+      border-left: 3px solid var(--accent-color);
+      background: white;
+      border-radius: 6px;
+      padding: 1rem;
+      margin-bottom: 0.75rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      transition: all 0.2s ease;
+    }
+    
+    .service-card:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+    }
+    
+    .service-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0.75rem;
+    }
+    
+    .service-title {
+      font-weight: 600;
+      color: var(--primary-color);
+      margin: 0;
+      font-size: 0.95rem;
+    }
+    
+    .service-provider {
+      color: var(--secondary-color);
+      font-weight: 500;
+      font-size: 0.85rem;
+    }
+    
+    .service-details {
+      font-size: 0.8rem;
+    }
+    
+    .service-detail {
+      margin-bottom: 0.4rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .service-detail:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+    }
+    
+    .detail-key {
+      font-weight: 600;
+      color: #2c5aa0; /* Blue color for keys */
+      min-width: 120px;
+      display: inline-block;
+    }
+    
+    .detail-value {
+      color: #555; /* Neutral color for values */
+    }
+    
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      color: white;
+    }
+    
+    .sector-badge {
+      background: linear-gradient(45deg, var(--accent-color), var(--secondary-color));
+      color: white;
+      padding: 3px 8px;
+      border-radius: 15px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      margin: 1px;
+    }
+    
+    .location-info-card {
+      background: white;
+      border-radius: 8px;
+      padding: 1rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      height: 100%;
+    }
+    
+    .no-data {
+      text-align: center;
+      padding: 2rem;
+      color: #6c757d;
+    }
+    
+    .no-data i {
+      font-size: 3rem;
+      margin-bottom: 0.75rem;
+      opacity: 0.3;
+    }
+
+    /* Fix for modal map initialization */
+    .modal-map-container {
+      height: 400px;
+      width: 100%;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    /* Ensure map containers have proper dimensions */
+    .leaflet-container {
+      background: #f8f9fa;
+    }
+
+    /* Custom marker styles */
+    .main-marker {
+      background-color: #3498db;
+      border: 3px solid white;
+      border-radius: 50%;
+      width: 16px;
+      height: 16px;
+    }
+
+    .service-marker {
+      background-color: #e74c3c;
+      border: 2px solid white;
+      border-radius: 50%;
+      width: 12px;
+      height: 12px;
+    }
+    
+    /* Tab styles for service categorization */
+    .service-tabs {
+      margin-bottom: 1rem;
+    }
+    
+    .service-tab-content {
+      min-height: 150px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    
+    .service-count-badge {
+      margin-left: 6px;
+      font-size: 0.7rem;
+    }
+    
+    .category-header {
+      background: linear-gradient(to right, #f8f9fa, #e9ecef);
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      border-left: 3px solid var(--secondary-color);
+      font-size: 0.85rem;
+    }
+    
+    /* Compact table styling */
+    .table-sm th, .table-sm td {
+      padding: 0.5rem 0.75rem;
+    }
+    
+    /* Color-coded table headers */
+    .table th {
+      background: linear-gradient(to bottom, #4a6fc2, #3a5ca8);
+      color: white;
+      font-weight: 600;
+      border-bottom: 2px solid #2c4a8a;
+    }
+    
+    /* Color-coded column names in location info */
+    .location-info-key {
+      font-weight: 600;
+      color: #2c5aa0;
+      min-width: 140px;
+      display: inline-block;
+    }
+    
+    .location-info-value {
+      color: #555;
+    }
+    
+    /* Color-coded popup content */
+    .popup-key {
+      font-weight: 600;
+      color: #2c5aa0;
+    }
+    
+    .popup-value {
+      color: #555;
+    }
+    
+    /* Clickable location names */
+    .clickable-location {
+      color: #3498db;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      font-weight: 500;
+    }
+    
+    .clickable-location:hover {
+      color: #2980b9;
+      text-decoration: underline;
+    }
+    
+    /* Go to location button */
+    .go-to-location-btn {
+      background: #1abc9c;
+      border: none;
+      border-radius: 4px;
+      color: white;
+      padding: 0.2rem 0.5rem;
+      font-size: 0.7rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-left: 5px;
+    }
+    
+    .go-to-location-btn:hover {
+      background: #16a085;
+      transform: translateY(-1px);
+    }
+    
+    /* Compact form controls */
+    .form-control, .form-select {
+      padding: 0.4rem 0.75rem;
+      font-size: 0.85rem;
+    }
+    
+    /* Compact modal */
+    .modal-body {
+      padding: 1rem;
+    }
+    
+    .modal-header {
+      padding: 0.75rem 1rem;
+    }
+    
+    .modal-footer {
+      padding: 0.75rem 1rem;
+    }
+    
+    /* Compact card body */
+    .card-body {
+      padding: 1rem;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .stats-number {
+        font-size: 1.5rem;
+      }
+      
+      .card-header {
+        padding: 0.6rem 0.8rem;
+      }
+      
+      #modalMap, #mainMap {
+        height: 300px;
+      }
+      
+      .modal-map-container {
+        height: 300px;
+      }
+      
+      .detail-key, .location-info-key {
+        min-width: 100px;
+      }
+    }
+    
+    /* Compact grid adjustments */
+    .compact-grid .row {
+      margin-bottom: 0.5rem;
+    }
+    
+    .compact-grid [class*="col-"] {
+      padding-left: 0.5rem;
+      padding-right: 0.5rem;
+    }
+    
+    /* Pinned marker styles */
+    .pinned-marker {
+      background: none !important;
+      border: none !important;
+    }
+    
+    /* Auto-load notification */
+    .auto-load-notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #1abc9c;
+      color: white;
+      padding: 10px 15px;
+      border-radius: 5px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      z-index: 10000;
+      font-size: 0.8rem;
+    }
+    
+    /* Column visibility controls */
+    .column-visibility-controls {
+      background: #f8f9fa;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid #dee2e6;
+    }
+    
+    .column-checkbox {
+      margin-right: 10px;
+      font-size: 0.8rem;
+    }
+    
+    .column-checkbox input {
+      margin-right: 5px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="dashboard-header">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-center">
+      <div class="d-flex align-items-center">
+        <img src="cccmlogo.png" alt="CCCM Cluster Logo" style="height: 50px; margin-right: 15px;" class="d-none d-md-block">
+        <div>
+          <h1 class="mb-1" style="font-size: 1.5rem;"><i class="fas fa-map-marked-alt me-2"></i>Catchment Area Service Mapping</h1>
+          <p class="mb-0" style="font-size: 0.85rem;">Interactive dashboard for visualizing and analyzing service areas across all sectors</p>
+        </div>
+      </div>
+      <div class="text-end d-none d-md-block">
+        <div class="small-muted" id="fileStatus">Ready to load data</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div class="container">
+  <!-- Loading Overlay -->
+  <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+    <div class="text-center">
+      <div class="spinner-border text-light mb-2" style="width: 2.5rem; height: 2.5rem;" role="status"></div>
+      <div id="processingDetails" class="h5" style="font-size: 1.1rem;">Processing Excel File...</div>
+      <div class="mt-2">
+        <div class="spinner-border spinner-border-sm text-light me-2" role="status"></div>
+        <span>Reading sheets...</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row compact-grid mb-3">
+  <div class="col-6 col-md-3 mb-2">
+    <div class="stats-card">
+      <div class="stats-number" id="totalLocations">0</div>
+      <div class="stats-label"><i class="fas fa-map-marker-alt me-1"></i>Community Centers</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3 mb-2">
+    <div class="stats-card">
+      <div class="stats-number" id="totalServices">0</div>
+      <div class="stats-label"><i class="fas fa-hands-helping me-1"></i>Service Providers</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3 mb-2">
+    <div class="stats-card">
+      <div class="stats-number" id="serviceSheets">0</div>
+      <div class="stats-label"><i class="fas fa-layer-group me-1"></i>Woredas</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3 mb-2">
+  <div class="stats-card">
+    <div style="font-size: 2rem; color: var(--accent-color); margin-bottom: 0.5rem;">
+      <i class="fas fa-people-carry"></i>
+    </div>
+    <div class="stats-label" style="font-size: 0.9rem; font-weight: 600;">Community First Approach</div>
+  </div>
+</div>
+</div>
+
+  <div class="row compact-grid">
+    <div class="col-lg-8 mb-3">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div>
+            <i class="fas fa-map me-2"></i>Service Locations Map
+          </div>
+        </div>
+        <div class="card-body p-0">
+          <div class="map-container">
+            <div id="mainMap"></div>
+            <div class="map-overlay">
+              <div class="btn-group btn-group-sm">
+                <button class="btn btn-outline-secondary" id="zoomIn" title="Zoom In">
+                  <i class="fas fa-search-plus"></i>
+                </button>
+                <button class="btn btn-outline-secondary" id="zoomOut" title="Zoom Out">
+                  <i class="fas fa-search-minus"></i>
+                </button>
+                <button class="btn btn-outline-secondary" id="resetView" title="Reset View">
+                  <i class="fas fa-globe-americas"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-lg-4 mb-3">
+      <div class="card h-100">
+        <div class="card-header">
+          <i class="fas fa-info-circle me-2"></i>Dashboard Information
+        </div>
+        <div class="card-body">
+          <p class="mb-2" style="font-size: 0.85rem;">This dashboard automatically processes all sheets from your Excel file and links them using the <code>index</code> and <code>parentindex</code> columns.</p>
+          
+          <div class="mb-2">
+            <h6 style="font-size: 0.9rem;"><i class="fas fa-upload feature-icon"></i>Update Data</h6>
+            <div class="file-fallback mb-2">
+              <input id="fileInput" type="file" accept=".xlsx,.xls" class="form-control form-control-sm" />
+            </div>
+            <div class="small text-muted">Supported formats: .xlsx, .xls</div>
+          </div>
+          
+          <div class="mb-2">
+            <h6 style="font-size: 0.9rem;"><i class="fas fa-map-marker-alt feature-icon"></i>Map Features</h6>
+            <ul class="small" style="font-size: 0.8rem;">
+              <li>Click on map markers to view detailed information</li>
+              <li>Different colors represent different service sectors</li>
+              <li>Use controls to zoom and navigate the map</li>
+              <li>Red markers indicate locations with services</li>
+              <li>Click location names to zoom to them on the map</li>
+            </ul>
+          </div>
+          
+          <div>
+            <h6 style="font-size: 0.9rem;"><i class="fas fa-table feature-icon"></i>Table Features</h6>
+            <ul class="small" style="font-size: 0.8rem;">
+              <li>Click any row to view all linked services</li>
+              <li>Search and filter using the table controls</li>
+              <li>View comprehensive service information</li>
+              <li>Service counts shown in the linked column</li>
+              <li>Use column visibility controls to show/hide columns</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <div>
+        <i class="fas fa-table me-2"></i>Service Locations
+      </div>
+      <div>
+        <button class="btn btn-sm btn-outline-secondary" id="toggleColumnsBtn" title="Toggle Column Visibility">
+          <i class="fas fa-columns me-1"></i>Columns
+        </button>
+      </div>
+    </div>
+    
+    <!-- Column Visibility Controls -->
+    <div class="column-visibility-controls" id="columnControls" style="display: none;">
+      <div class="row">
+        <div class="col-md-12">
+          <strong class="me-2" style="font-size: 0.8rem;">Show/Hide Columns:</strong>
+          <div id="columnCheckboxes">
+            <!-- Column checkboxes will be generated here -->
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="card-body p-0">
+      <table id="mainTable" class="table table-striped table-hover table-sm" style="width:100%">
+        <thead>
+          <tr>
+            <th>Region</th>
+            <th>Zone</th>
+            <th>Woreda</th>
+            <th>Community Center</th>
+            <th>CCCM Agency</th>
+            <th>Service Providers</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Data will be populated dynamically -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="footer text-center">
+    <p class="mb-0">CCCM Cluster Ethiopia</p>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" style="font-size: 1.1rem;"><i class="fas fa-info-circle me-2"></i>Location Details</h5>
+        <div>
+          <button type="button" class="btn btn-sm btn-outline-secondary me-2" id="toggleModalColumnsBtn" title="Toggle Column Visibility">
+            <i class="fas fa-columns me-1"></i>Columns
+          </button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+      </div>
+      
+      <!-- Modal Column Visibility Controls -->
+      <div class="column-visibility-controls" id="modalColumnControls" style="display: none;">
+        <div class="row">
+          <div class="col-md-12">
+            <strong class="me-2" style="font-size: 0.8rem;">Show/Hide Service Details:</strong>
+            <div id="modalColumnCheckboxes">
+              <!-- Modal column checkboxes will be generated here -->
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="modal-body">
+        <div class="row compact-grid mb-3">
+          <div class="col-lg-5">
+            <div class="location-info-card">
+              <h6 class="mb-2" style="font-size: 0.95rem;"><i class="fas fa-location-dot me-2"></i>Location Information</h6>
+              <div id="locationInfo"></div>
+            </div>
+          </div>
+          <div class="col-lg-7">
+            <div class="location-info-card">
+              <h6 class="mb-2" style="font-size: 0.95rem;"><i class="fas fa-map me-2"></i>Service Locations Map</h6>
+              <div class="modal-map-container">
+                <div id="modalMap"></div>
+              </div>
+              <!-- Remove this div to hide the modal map legend -->
+		<!--
+		  <div class="mt-1 small text-muted" id="modalMapLegend" style="font-size: 0.75rem;">
+                <span class="me-2"><i class="fas fa-circle text-primary me-1"></i> Main Location</span>
+                <span><i class="fas fa-circle text-danger me-1"></i> Service Locations</span>
+              </div> -->
+
+            </div>
+          </div>
+        </div>
+        
+        <div class="location-info-card">
+          <h6 class="mb-2" style="font-size: 0.95rem;"><i class="fas fa-link me-2"></i>Linked Services</h6>
+          
+          <!-- Service Tabs -->
+          <ul class="nav nav-tabs service-tabs" id="serviceTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="cc-tab" data-bs-toggle="tab" data-bs-target="#cc-tab-pane" type="button" role="tab" aria-controls="cc-tab-pane" aria-selected="true">
+                <i class="fas fa-building me-1"></i>Community Center
+                <span class="badge bg-primary service-count-badge" id="cc-count">0</span>
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="ca-tab" data-bs-toggle="tab" data-bs-target="#ca-tab-pane" type="button" role="tab" aria-controls="ca-tab-pane" aria-selected="false">
+                <i class="fas fa-map-marked-alt me-1"></i>Catchment Area
+                <span class="badge bg-primary service-count-badge" id="ca-count">0</span>
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="other-tab" data-bs-toggle="tab" data-bs-target="#other-tab-pane" type="button" role="tab" aria-controls="other-tab-pane" aria-selected="false">
+                <i class="fas fa-question-circle me-1"></i>Other
+                <span class="badge bg-primary service-count-badge" id="other-count">0</span>
+              </button>
+            </li>
+          </ul>
+          
+          <div class="tab-content service-tab-content" id="serviceTabContent">
+            <div class="tab-pane fade show active" id="cc-tab-pane" role="tabpanel" aria-labelledby="cc-tab" tabindex="0">
+              <div id="cc-services"></div>
+            </div>
+            <div class="tab-pane fade" id="ca-tab-pane" role="tabpanel" aria-labelledby="ca-tab" tabindex="0">
+              <div id="ca-services"></div>
+            </div>
+            <div class="tab-pane fade" id="other-tab-pane" role="tabpanel" aria-labelledby="other-tab" tabindex="0">
+              <div id="other-services"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JS libs -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- SheetJS -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<script>
+// Global variables
+let workbookData = null;
+let mainSheetData = [];
+let serviceSheets = {};
+let dataTable = null;
+let mainMap = null;
+let modalMap = null;
+let markersLayer = null;
+let locationMarkers = {}; // Store markers by location index for quick access
+let pinnedMarkers = []; // Store pinned markers for the modal map
+let currentModalLocation = null; // Store current modal location for refreshing
+
+// Column configuration - EASILY CUSTOMIZE VISIBLE COLUMNS HERE
+const columnConfig = [
+  { 
+    data: 'region', 
+    title: 'Region', 
+    visible: true,
+    className: ''
+  },
+  { 
+    data: 'zone', 
+    title: 'Zone', 
+    visible: true,
+    className: ''
+  },
+  { 
+    data: 'woreda', 
+    title: 'Woreda', 
+    visible: true,
+    className: ''
+  },
+  { 
+    data: 'community_center', 
+    title: 'Community Center', 
+    visible: true,
+    className: ''
+  },
+  { 
+    data: 'cccm_agency', 
+    title: 'CCCM Agency', 
+    visible: true,
+    className: ''
+  },
+  { 
+    data: 'linked_services', 
+    title: 'Linked Services', 
+    visible: true,
+    className: 'text-center'
+  }
+];
+
+// Modal column configuration - Control which service details are visible
+const modalColumnConfig = [
+  { 
+    id: 'services_provided',
+    title: 'Services Provided', 
+    visible: true,
+    key: 'Services'
+  },
+  { 
+    id: 'focal_person',
+    title: 'Focal Person', 
+    visible: true,
+    key: 'Focal Person Name'
+  },
+  { 
+    id: 'phone',
+    title: 'Phone Number', 
+    visible: true,
+    key: 'Phone Number'
+  },
+  { 
+    id: 'coordinates',
+    title: 'Coordinates', 
+    visible: true,
+    key: '_coordinates'
+  },
+  { 
+    id: 'map_action',
+    title: 'Map Actions', 
+    visible: true,
+    key: '_mapAction'
+  }
+];
+
+// Color scheme for different service types
+const serviceColors = {
+  'food_ca': '#e74c3c',
+  'food_cc': '#c0392b',
+  'wash_ca': '#3498db', 
+  'wash_cc': '#2980b9',
+  'shelter_ca': '#2ecc71',
+  'shelter_cc': '#27ae60',
+  'health_ca': '#9b59b6',
+  'health_cc': '#8e44ad',
+  'protection_ca': '#f39c12',
+  'protection_cc': '#d35400',
+  'education_ca': '#1abc9c',
+  'education_cc': '#16a085',
+  'nfis_ca': '#34495e',
+  'nfis_cc': '#2c3e50',
+  'default': '#7f8c8d'
+};
+
+// Show loading overlay
+function showLoading(message = 'Processing Excel File...') {
+  document.getElementById('loadingOverlay').style.display = 'flex';
+  document.getElementById('processingDetails').textContent = message;
+}
+
+// Hide loading overlay
+function hideLoading() {
+  document.getElementById('loadingOverlay').style.display = 'none';
+}
+
+// Show auto-load notification
+function showAutoLoadNotification(message) {
+  // Remove existing notification
+  const existingNotification = document.querySelector('.auto-load-notification');
+  if (existingNotification) {
+    existingNotification.remove();
+  }
+  
+  // Create new notification
+  const notification = document.createElement('div');
+  notification.className = 'auto-load-notification';
+  notification.innerHTML = `
+    <i class="fas fa-info-circle me-2"></i>${message}
+  `;
+  document.body.appendChild(notification);
+  
+  // Auto-remove after 5 seconds
+  setTimeout(() => {
+    if (notification.parentNode) {
+      notification.remove();
+    }
+  }, 5000);
+}
+
+// Initialize column visibility controls
+function initializeColumnControls() {
+  const container = document.getElementById('columnCheckboxes');
+  container.innerHTML = '';
+  
+  columnConfig.forEach((column, index) => {
+    const checkbox = document.createElement('span');
+    checkbox.className = 'column-checkbox';
+    checkbox.innerHTML = `
+      <input type="checkbox" id="col-${index}" data-column="${index}" ${column.visible ? 'checked' : ''}>
+      <label for="col-${index}">${column.title}</label>
+    `;
+    container.appendChild(checkbox);
+  });
+  
+  // Add event listeners to checkboxes
+  document.querySelectorAll('#columnCheckboxes input[type="checkbox"]').forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+      const columnIndex = parseInt(this.getAttribute('data-column'));
+      const isVisible = this.checked;
+      
+      if (dataTable) {
+        dataTable.column(columnIndex).visible(isVisible);
+      }
+    });
+  });
+}
+
+// Initialize modal column visibility controls
+function initializeModalColumnControls() {
+  const container = document.getElementById('modalColumnCheckboxes');
+  container.innerHTML = '';
+  
+  modalColumnConfig.forEach((column, index) => {
+    const checkbox = document.createElement('span');
+    checkbox.className = 'column-checkbox';
+    checkbox.innerHTML = `
+      <input type="checkbox" id="modal-col-${index}" data-column="${column.id}" ${column.visible ? 'checked' : ''}>
+      <label for="modal-col-${index}">${column.title}</label>
+    `;
+    container.appendChild(checkbox);
+  });
+  
+  // Add event listeners to modal checkboxes
+  document.querySelectorAll('#modalColumnCheckboxes input[type="checkbox"]').forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+      const columnId = this.getAttribute('data-column');
+      const isVisible = this.checked;
+      
+      // Update the column configuration
+      const column = modalColumnConfig.find(col => col.id === columnId);
+      if (column) {
+        column.visible = isVisible;
+      }
+      
+      // Refresh the modal content if it's open
+      refreshModalContent();
+    });
+  });
+}
+
+// Toggle column controls visibility
+function toggleColumnControls() {
+  const controls = document.getElementById('columnControls');
+  if (controls.style.display === 'none') {
+    controls.style.display = 'block';
+  } else {
+    controls.style.display = 'none';
+  }
+}
+
+// Toggle modal column controls visibility
+function toggleModalColumnControls() {
+  const controls = document.getElementById('modalColumnControls');
+  if (controls.style.display === 'none') {
+    controls.style.display = 'block';
+  } else {
+    controls.style.display = 'none';
+  }
+}
+
+// Refresh modal content based on column visibility
+function refreshModalContent() {
+  const currentModal = bootstrap.Modal.getInstance(document.getElementById('detailModal'));
+  if (currentModal && currentModalLocation) {
+    updateLinkedServices(currentModalLocation);
+  }
+}
+
+// Initialize main map
+function initializeMainMap() {
+  if (!mainMap) {
+    mainMap = L.map('mainMap').setView([9.1450, 40.4897], 6);
+    
+    // Add tile layer with error handling
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(mainMap);
+    
+    // Add map controls
+    document.getElementById('zoomIn').addEventListener('click', () => mainMap.zoomIn());
+    document.getElementById('zoomOut').addEventListener('click', () => mainMap.zoomOut());
+    document.getElementById('resetView').addEventListener('click', () => mainMap.setView([9.1450, 40.4897], 6));
+    
+    console.log('Main map initialized');
+  }
+}
+
+// Enhanced coordinate parsing function
+function parseCoordinate(value) {
+  if (value === null || value === undefined || value === '') {
+    return NaN;
+  }
+  
+  // Convert to string and clean
+  const strValue = String(value).trim();
+  
+  // Handle empty strings
+  if (strValue === '') {
+    return NaN;
+  }
+  
+  // Try direct number conversion first
+  const num = Number(strValue);
+  if (!isNaN(num) && isFinite(num)) {
+    return num;
+  }
+  
+  // Handle comma as decimal separator (common in some regions)
+  const commaFixed = strValue.replace(',', '.');
+  const numWithComma = Number(commaFixed);
+  if (!isNaN(numWithComma) && isFinite(numWithComma)) {
+    return numWithComma;
+  }
+  
+  return NaN;
+}
+
+// Parse coordinates for service sheets
+function parseServiceCoordinates(service) {
+  const lat = parseCoordinate(service.latitude || service.Latitude || service.LATITUDE || service.lat);
+  const lon = parseCoordinate(service.longitude || service.Longitude || service.LONGITUDE || service.lon || service.long);
+  return { lat, lon };
+}
+
+// Get all linked services for a location
+function getLinkedServices(location) {
+  const linkedServices = [];
+  
+  Object.keys(serviceSheets).forEach(sheetName => {
+    const services = serviceSheets[sheetName].filter(service => 
+      String(service._parentindex) === String(location._index));
+    
+    services.forEach(service => {
+      linkedServices.push({
+        ...service,
+        _sheetName: sheetName
+      });
+    });
+  });
+  
+  return linkedServices;
+}
+
+// Zoom to a specific location on the main map
+function zoomToLocation(location) {
+  if (!isNaN(location._lat) && !isNaN(location._lon)) {
+    // Close any open popups first
+    mainMap.closePopup();
+    
+    // Zoom to the location
+    mainMap.setView([location._lat, location._lon], 12);
+    
+    // Open the popup for this location if it exists
+    if (locationMarkers[location._index]) {
+      locationMarkers[location._index].openPopup();
+    }
+    
+    console.log(`Zoomed to location ${location._index} at ${location._lat}, ${location._lon}`);
+  } else {
+    alert('This location does not have valid coordinates and cannot be displayed on the map.');
+  }
+}
+
+// Add a pinned marker to the modal map
+function addPinnedMarker(lat, lon, title = 'Pinned Location', providerName = '') {
+  if (!modalMap) return null;
+  
+  // Create a custom pin icon
+  const pinIcon = L.divIcon({
+    className: 'pinned-marker',
+    html: `<div style="background-color: #ff5722; width: 24px; height: 32px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); position: relative; margin-top: -32px;">
+             <div style="position: absolute; top: 6px; left: 6px; width: 12px; height: 12px; background: white; border-radius: 50%;"></div>
+           </div>`,
+    iconSize: [24, 32],
+    iconAnchor: [12, 32]
+  });
+  
+  // Add the pinned marker
+  const pinnedMarker = L.marker([lat, lon], { icon: pinIcon }).addTo(modalMap);
+  
+  // Create popup content
+  const popupContent = providerName 
+    ? `<div style="min-width: 200px;">
+         <h6 style="font-size: 0.9rem;"><strong><i class="fas fa-thumbtack me-1"></i>${providerName}</strong></h6>
+         <p class="mb-1" style="font-size: 0.8rem;">${title}</p>
+         <p class="mb-0" style="font-size: 0.8rem;">Coordinates: ${lat.toFixed(6)}, ${lon.toFixed(6)}</p>
+       </div>`
+    : `<div style="min-width: 200px;">
+         <h6 style="font-size: 0.9rem;"><strong><i class="fas fa-thumbtack me-1"></i>${title}</strong></h6>
+         <p class="mb-0" style="font-size: 0.8rem;">Coordinates: ${lat.toFixed(6)}, ${lon.toFixed(6)}</p>
+       </div>`;
+  
+  pinnedMarker.bindPopup(popupContent).openPopup();
+  
+  // Store the pinned marker
+  pinnedMarkers.push(pinnedMarker);
+  
+  // Zoom to the pinned location
+  modalMap.setView([lat, lon], 14);
+  
+  return pinnedMarker;
+}
+
+// Clear all pinned markers from modal map
+function clearPinnedMarkers() {
+  pinnedMarkers.forEach(marker => {
+    if (modalMap && marker) {
+      modalMap.removeLayer(marker);
+    }
+  });
+  pinnedMarkers = [];
+}
+
+// Initialize modal map with all service locations
+function initializeModalMap(location) {
+  const mapDiv = document.getElementById('modalMap');
+  
+  // Clear any existing map and pinned markers
+  if (modalMap) {
+    modalMap.remove();
+    modalMap = null;
+  }
+  clearPinnedMarkers();
+  
+  // Ensure the map container is visible and has dimensions
+  mapDiv.innerHTML = '';
+  mapDiv.style.height = '400px';
+  mapDiv.style.width = '100%';
+  
+  // Get all linked services for this location
+  const linkedServices = getLinkedServices(location);
+  
+  // Find all valid coordinates (main location + linked services)
+  const allPoints = [];
+  
+  // Add main location if it has coordinates
+  if (!isNaN(location._lat) && !isNaN(location._lon)) {
+    allPoints.push([location._lat, location._lon]);
+  }
+  
+  // Add linked service locations with valid coordinates
+  linkedServices.forEach(service => {
+    if (!isNaN(service._lat) && !isNaN(service._lon)) {
+      allPoints.push([service._lat, service._lon]);
+    }
+  });
+  
+  // Set initial view - use average of all points or default to Ethiopia
+  let centerLat = 9.1450;
+  let centerLon = 40.4897;
+  let zoom = 6;
+  
+  if (allPoints.length > 0) {
+    const avgLat = allPoints.reduce((sum, point) => sum + point[0], 0) / allPoints.length;
+    const avgLon = allPoints.reduce((sum, point) => sum + point[1], 0) / allPoints.length;
+    centerLat = avgLat;
+    centerLon = avgLon;
+    zoom = allPoints.length === 1 ? 10 : 8;
+  }
+  
+  // Create new map with a slight delay to ensure DOM is ready
+  setTimeout(() => {
+    modalMap = L.map('modalMap').setView([centerLat, centerLon], zoom);
+    
+    // Add tile layer with error handling
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(modalMap);
+    
+    const bounds = [];
+    let servicePointsCount = 0;
+    
+    // Add main location marker if coordinates are valid
+    if (!isNaN(location._lat) && !isNaN(location._lon)) {
+      const mainMarker = L.circleMarker([location._lat, location._lon], {
+        color: '#3498db',
+        fillColor: '#3498db',
+        fillOpacity: 0.9,
+        radius: 10,
+        weight: 2
+      }).addTo(modalMap);
+      
+      mainMarker.bindPopup(`
+        <div style="min-width: 220px;">
+          <h6 style="font-size: 0.9rem;"><strong><i class="fas fa-home me-1"></i>${location['Community Center'] || 'Location ' + location._index}</strong></h6>
+          <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Type:</span> <span class="popup-value">Main Community Center</span></p>
+          <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Region:</span> <span class="popup-value">${location.Region || 'N/A'}</span></p>
+          <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Zone:</span> <span class="popup-value">${location.Zone || 'N/A'}</span></p>
+          <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Woreda:</span> <span class="popup-value">${location.Woreda || 'N/A'}</span></p>
+          <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">CCCM Agency:</span> <span class="popup-value">${location['CCCM Agency'] || 'N/A'}</span></p>
+          <p class="mb-0" style="font-size: 0.8rem;"><span class="popup-key">Coordinates:</span> <span class="popup-value">${location._lat.toFixed(6)}, ${location._lon.toFixed(6)}</span></p>
+        </div>
+      `);
+      
+      bounds.push([location._lat, location._lon]);
+      console.log('Main location marker added at:', location._lat, location._lon);
+    }
+    
+    // Add service locations from all linked sheets
+    linkedServices.forEach((service, index) => {
+      const coords = parseServiceCoordinates(service);
+      
+      if (!isNaN(coords.lat) && !isNaN(coords.lon)) {
+        servicePointsCount++;
+        
+        // Get color for this service type
+        const color = serviceColors[service._sheetName.toLowerCase()] || serviceColors['default'];
+        const provider = getOrganizationName(service);
+const services = service.Services || service.services || service.SERVICES || 
+                service['If yes, please specify the services'] || service['other services'] || 
+                service['ACDD'] || 'Not specified';
+const focalPerson = service['Focal Person Name'] || service['Focal Person'] || service['FOCAL PERSON'] || 'Not specified';
+        
+        const serviceMarker = L.circleMarker([coords.lat, coords.lon], {
+          color: color,
+          fillColor: color,
+          fillOpacity: 0.7,
+          radius: 6,
+          weight: 1
+        }).addTo(modalMap);
+        
+        serviceMarker.bindPopup(`
+          <div style="min-width: 240px;">
+            <h6 style="font-size: 0.9rem;"><strong><i class="fas fa-hands-helping me-1"></i>${provider}</strong></h6>
+            <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Service Type:</span> <span class="popup-value">${getServiceCategoryName(service._sheetName)}</span></p>
+            <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Services Provided:</span> <span class="popup-value">${services}</span></p>
+            <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Focal Person:</span> <span class="popup-value">${focalPerson}</span></p>
+            <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Phone:</span> <span class="popup-value">${service['Phone Number'] || service['Phone'] || service['PHONE'] || 'Not specified'}</span></p>
+            <p class="mb-0" style="font-size: 0.8rem;"><span class="popup-key">Coordinates:</span> <span class="popup-value">${coords.lat.toFixed(6)}, ${coords.lon.toFixed(6)}</span></p>
+            <div class="mt-1">
+              <button class="go-to-location-btn" data-lat="${coords.lat}" data-lon="${coords.lon}" data-provider="${provider}">
+                <i class="fas fa-map-marker-alt me-1"></i> Pin This Location
+              </button>
+            </div>
+          </div>
+        `);
+        
+        bounds.push([coords.lat, coords.lon]);
+        console.log(`Service marker ${index} added for ${service._sheetName} at:`, coords.lat, coords.lon);
+      }
+    });
+    
+    // Fit map to show all markers if we have any
+    if (bounds.length > 0) {
+      modalMap.fitBounds(bounds, { padding: [20, 20] });
+    }
+    
+    // Update legend text with service counts
+    document.getElementById('modalMapLegend').innerHTML = `
+      <span class="me-2"><i class="fas fa-circle text-primary me-1"></i> Main Location</span>
+      <span class="me-2"><i class="fas fa-circle text-danger me-1"></i> Service Locations (${servicePointsCount})</span>
+      <span class="me-2"><i class="fas fa-thumbtack text-warning me-1"></i> Pinned Locations</span>
+      <span><i class="fas fa-layer-group me-1"></i> ${Object.keys(serviceSheets).length} Service Sectors</span>
+    `;
+    
+    console.log(`Modal map initialized with ${bounds.length} total markers (${servicePointsCount} service locations)`);
+    
+    // Force map to resize and render properly after modal is shown
+    setTimeout(() => {
+      if (modalMap) {
+        modalMap.invalidateSize(true);
+      }
+    }, 300);
+  }, 100);
+}
+
+// Get user-friendly service category name
+function getServiceCategoryName(sheetName) {
+  const name = sheetName.toLowerCase();
+  
+  // Extract sector name and location type
+  const sector = name.split('_')[0];
+  const locationType = name.split('_')[1];
+  
+  // Capitalize sector name
+  const sectorName = sector.charAt(0).toUpperCase() + sector.slice(1).toUpperCase();
+  
+  // Map location types to friendly names
+  if (locationType === 'cc') {
+    return `${sectorName} Sector`;
+  } else if (locationType === 'ca') {
+    return `${sectorName} Sector`;
+  }
+  
+  // For "Other" sheet or other cases, just return the sheet name
+  return sheetName;
+}
+
+// Get organization name for service provider display
+function getOrganizationName(service) {
+  return service['service provider'] || service['Service Provider'] || service['SERVICE PROVIDER'] || 'Unknown Provider';
+}
+// Process uploaded Excel file
+function processWorkbook(file) {
+  showLoading('Reading Excel file...');
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      showLoading('Processing sheets...');
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, {type: 'array'});
+      
+      workbookData = {};
+      mainSheetData = [];
+      serviceSheets = {};
+      
+      // Process all sheets
+      wb.SheetNames.forEach(sheetName => {
+        const worksheet = wb.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, {defval: ''});
+        workbookData[sheetName] = jsonData;
+        
+        // Identify main sheet (has index column)
+        if (jsonData.length > 0) {
+          const firstRow = jsonData[0];
+          const hasIndex = Object.keys(firstRow).some(key => 
+            key.toLowerCase() === 'index');
+          
+          if (hasIndex) {
+            mainSheetData = jsonData.map((row, index) => {
+              // Enhanced coordinate parsing
+              const lat = parseCoordinate(row.latitude || row.Latitude || row.LATITUDE || row.lat);
+              const lon = parseCoordinate(row.longitude || row.Longitude || row.LONGITUDE || row.lon || row.long);
+              
+              return {
+                ...row,
+                _index: row.index || row.Index || row.INDEX || null,
+                _lat: lat,
+                _lon: lon,
+                _rowIndex: index
+              };
+            }).filter(row => row._index !== null);
+            
+          } else {
+            // Store as service sheet with parsed coordinates
+            serviceSheets[sheetName] = jsonData.map(row => {
+              const coords = parseServiceCoordinates(row);
+              return {
+                ...row,
+                _parentindex: row.parentindex || row.ParentIndex || row.parentIndex || row.PARENTINDEX || null,
+                _index: row.index || row.Index || row.INDEX || null,
+                _lat: coords.lat,
+                _lon: coords.lon
+              };
+            });
+          }
+        }
+      });
+      
+      showLoading('Updating dashboard...');
+      updateDashboard();
+      hideLoading();
+      
+      // Update file status
+      document.getElementById('fileStatus').textContent = `Loaded: ${file.name}`;
+      
+    } catch (error) {
+      hideLoading();
+      alert('Error processing Excel file: ' + error.message);
+      console.error('Error:', error);
+      document.getElementById('fileStatus').textContent = 'Error loading file';
+    }
+  };
+  
+  reader.onerror = function() {
+    hideLoading();
+    alert('Error reading file. Please try again.');
+    document.getElementById('fileStatus').textContent = 'Error reading file';
+  };
+  
+  reader.readAsArrayBuffer(file);
+}
+
+// Update dashboard statistics and views
+function updateDashboard() {
+  updateStatistics();
+  renderMainTable();
+  renderMap();
+}
+
+// Update statistics
+// Update statistics
+function updateStatistics() {
+  // 1. Total Community Centers (was Total Locations)
+  document.getElementById('totalLocations').textContent = mainSheetData.length.toLocaleString();
+  
+  // 2. Total Unique Service Providers (was Total Services)
+  let uniqueServiceProviders = new Set();
+  Object.keys(serviceSheets).forEach(sheetName => {
+    serviceSheets[sheetName].forEach(service => {
+      const provider = getOrganizationName(service);
+      if (provider && provider !== 'Unknown Provider') {
+        uniqueServiceProviders.add(provider);
+      }
+    });
+  });
+  document.getElementById('totalServices').textContent = uniqueServiceProviders.size.toLocaleString();
+  
+  // 3. Total Unique Woredas (was Service Sectors)
+  let uniqueWoredas = new Set();
+  mainSheetData.forEach(location => {
+    const woreda = location.Woreda || location.woreda;
+    if (woreda && woreda !== 'N/A') {
+      uniqueWoredas.add(woreda);
+    }
+  });
+  document.getElementById('serviceSheets').textContent = uniqueWoredas.size.toLocaleString();
+  
+  
+}
+
+
+// Render main table
+function renderMainTable() {
+  const tableBody = document.querySelector('#mainTable tbody');
+  tableBody.innerHTML = '';
+  
+  mainSheetData.forEach(location => {
+    // Count unique service providers (not just services)
+    let uniqueProviders = new Set();
+    Object.keys(serviceSheets).forEach(sheetName => {
+      const linked = serviceSheets[sheetName].filter(service => 
+        String(service._parentindex) === String(location._index));
+      
+      linked.forEach(service => {
+        const provider = getOrganizationName(service);
+        uniqueProviders.add(provider);
+      });
+    });
+    
+    const linkedCount = uniqueProviders.size;
+    
+    const row = document.createElement('tr');
+    row.setAttribute('data-index', location._index);
+    
+    // Make location name clickable if coordinates are available
+    const locationName = location['Community Center'] || 'Location ' + location._index;
+    const locationDisplay = !isNaN(location._lat) && !isNaN(location._lon) 
+      ? `<span class="clickable-location" data-index="${location._index}">${locationName}</span>`
+      : locationName;
+    
+    row.innerHTML = `
+      <td>${location.Region || 'N/A'}</td>
+      <td>${location.Zone || 'N/A'}</td>
+      <td>${location.Woreda || 'N/A'}</td>
+      <td>${locationDisplay}</td>
+      <td>${location['CCCM Agency'] || 'N/A'}</td>
+      <td>
+        ${linkedCount > 0 ? 
+          `<span class="badge bg-primary rounded-pill" style="font-size: 0.7rem;">${linkedCount} service provider${linkedCount !== 1 ? 's' : ''}</span>` : 
+          `<span class="badge bg-secondary rounded-pill" style="font-size: 0.7rem;">No service providers</span>`
+        }
+      </td>
+    `;
+    
+    row.addEventListener('click', () => openDetailModal(location));
+    tableBody.appendChild(row);
+  });
+  
+  // Initialize DataTable with column visibility control
+  if (!dataTable) {
+    // Prepare columns based on configuration
+    const columns = columnConfig.map(col => ({
+      data: col.data,
+      title: col.title,
+      className: col.className,
+      visible: col.visible
+    }));
+    
+    dataTable = $('#mainTable').DataTable({
+      pageLength: 10,
+      responsive: true,
+      dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+      language: {
+        search: "_INPUT_",
+        searchPlaceholder: "Search locations...",
+        lengthMenu: "Show _MENU_ entries",
+        info: "Showing _START_ to _END_ of _TOTAL_ entries",
+        infoEmpty: "Showing 0 to 0 of 0 entries",
+        infoFiltered: "(filtered from _MAX_ total entries)",
+        paginate: {
+          first: "First",
+          last: "Last",
+          next: "Next",
+          previous: "Previous"
+        }
+      },
+      columns: columns
+    });
+  } else {
+    dataTable.destroy();
+    
+    // Prepare columns based on configuration
+    const columns = columnConfig.map(col => ({
+      data: col.data,
+      title: col.title,
+      className: col.className,
+      visible: col.visible
+    }));
+    
+    dataTable = $('#mainTable').DataTable({
+      pageLength: 10,
+      responsive: true,
+      dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+      language: {
+        search: "_INPUT_",
+        searchPlaceholder: "Search locations...",
+        lengthMenu: "Show _MENU_ entries",
+        info: "Showing _START_ to _END_ of _TOTAL_ entries",
+        infoEmpty: "Showing 0 to 0 of 0 entries",
+        infoFiltered: "(filtered from _MAX_ total entries)",
+        paginate: {
+          first: "First",
+          last: "Last",
+          next: "Next",
+          previous: "Previous"
+        }
+      },
+      columns: columns
+    });
+  }
+}
+
+// Render main map with markers
+function renderMap() {
+  // Clear existing markers
+  if (markersLayer) {
+    mainMap.removeLayer(markersLayer);
+  }
+  
+  markersLayer = L.layerGroup().addTo(mainMap);
+  locationMarkers = {}; // Reset the markers storage
+  
+  const bounds = [];
+  let validMarkers = 0;
+  
+  mainSheetData.forEach(location => {
+    if (!isNaN(location._lat) && !isNaN(location._lon)) {
+      validMarkers++;
+      
+      // Count unique service providers
+      let uniqueProviders = new Set();
+      Object.keys(serviceSheets).forEach(sheetName => {
+        const linked = serviceSheets[sheetName].filter(service => 
+          String(service._parentindex) === String(location._index));
+        
+        linked.forEach(service => {
+          const provider = getOrganizationName(service);
+          uniqueProviders.add(provider);
+        });
+      });
+      
+      const linkedCount = uniqueProviders.size;
+      
+      // Determine marker color based on linked services
+      const color = linkedCount > 0 ? '#e74c3c' : '#3498db';
+      const radius = linkedCount > 0 ? 6 : 5;
+      
+      const marker = L.circleMarker([location._lat, location._lon], {
+        color: color,
+        fillColor: color,
+        fillOpacity: 0.7,
+        radius: radius,
+        weight: 1
+      }).addTo(markersLayer);
+      
+      // Store marker for quick access
+      locationMarkers[location._index] = marker;
+      
+      // Create popup content
+      const popupContent = `
+        <div style="min-width: 220px;">
+          <h6 style="font-size: 0.9rem;"><strong>${location['Community Center'] || 'Location ' + location._index}</strong></h6>
+          <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Region:</span> <span class="popup-value">${location.Region || 'N/A'}</span></p>
+          <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Zone:</span> <span class="popup-value">${location.Zone || 'N/A'}</span></p>
+          <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Woreda:</span> <span class="popup-value">${location.Woreda || 'N/A'}</span></p>
+          <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">CCCM Agency:</span> <span class="popup-value">${location['CCCM Agency'] || 'N/A'}</span></p>
+          <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Service Providers:</span> <span class="popup-value">${linkedCount}</span></p>
+          <p class="mb-0" style="font-size: 0.8rem;"><span class="popup-key">Coordinates:</span> <span class="popup-value">${location._lat.toFixed(6)}, ${location._lon.toFixed(6)}</span></p>
+          <div class="mt-1">
+            <button class="btn btn-sm btn-primary view-details-btn" data-index="${location._index}" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">
+              <i class="fas fa-info-circle me-1"></i>View Details
+            </button>
+          </div>
+        </div>
+      `;
+      
+      marker.bindPopup(popupContent);
+      
+      // Add click event to open modal
+      marker.on('click', function() {
+        openDetailModal(location);
+      });
+      
+      bounds.push([location._lat, location._lon]);
+    }
+  });
+  
+  // Fit map to show all markers if we have any valid ones
+  if (bounds.length > 0) {
+    mainMap.fitBounds(bounds, { padding: [15, 15] });
+  }
+  
+  console.log(`Map rendered with ${validMarkers} valid markers out of ${mainSheetData.length} total locations`);
+}
+
+// Categorize services by type
+function categorizeServices(linkedServices) {
+  const ccServices = {};
+  const caServices = {};
+  const otherServices = {};
+  
+  linkedServices.forEach(service => {
+    const sheetName = service._sheetName.toLowerCase();
+    
+    if (sheetName.includes('_cc')) {
+      if (!ccServices[sheetName]) {
+        ccServices[sheetName] = [];
+      }
+      ccServices[sheetName].push(service);
+    } else if (sheetName.includes('_ca')) {
+      if (!caServices[sheetName]) {
+        caServices[sheetName] = [];
+      }
+      caServices[sheetName].push(service);
+    } else {
+      if (!otherServices[sheetName]) {
+        otherServices[sheetName] = [];
+      }
+      otherServices[sheetName].push(service);
+    }
+  });
+  
+  return { ccServices, caServices, otherServices };
+}
+
+// Render services for a specific category with column visibility control
+// Render services for a specific category with column visibility control
+function renderServiceCategory(containerId, servicesBySheet, categoryName) {
+  const container = document.getElementById(containerId);
+  
+  if (Object.keys(servicesBySheet).length === 0) {
+    container.innerHTML = `
+      <div class="no-data" style="padding: 1.5rem;">
+        <i class="fas fa-unlink"></i>
+        <h5 style="font-size: 1rem;">No ${categoryName} Services Found</h5>
+        <p style="font-size: 0.85rem;">This location doesn't have any linked ${categoryName.toLowerCase()} service records.</p>
+      </div>
+    `;
+    return;
+  }
+  
+  let servicesHTML = '';
+  
+  Object.keys(servicesBySheet).forEach(sheetName => {
+    const services = servicesBySheet[sheetName];
+    
+    servicesHTML += `
+      <div class="mb-3">
+        <div class="category-header">
+          <h6 class="mb-0">${getServiceCategoryName(sheetName)}${getSectorFromServices(services) ? ' - ' + getSectorFromServices(services) : ''} <span class="badge bg-primary" style="font-size: 0.7rem;">${services.length} service provider${services.length !== 1 ? 's' : ''}</span></h6>
+        </div>
+        <div class="row compact-grid">
+    `;
+    
+    services.forEach(service => {
+      const provider = getOrganizationName(service);
+      const servicesList = service.Services || service.services || service.SERVICES || 
+                          service['If yes, please specify the services'] || service['other services'] || 
+                          service['ACDD'] || 'Not specified';
+      const focalPerson = service['Focal Person Name'] || service['Focal Person'] || service['FOCAL PERSON'] || 'Not specified';
+      const phone = service['Phone Number'] || service['Phone'] || service['PHONE'] || 'Not specified';
+      const coords = parseServiceCoordinates(service);
+      
+      // Build service details based on visible columns
+      let serviceDetailsHTML = '';
+      
+      // Services Provided
+      if (modalColumnConfig.find(col => col.id === 'services_provided').visible) {
+        serviceDetailsHTML += `
+          <div class="service-detail">
+            <span class="detail-key">Services Provided:</span>
+            <span class="detail-value">${servicesList}</span>
+          </div>
+        `;
+      }
+      
+      // Focal Person
+      if (modalColumnConfig.find(col => col.id === 'focal_person').visible) {
+        serviceDetailsHTML += `
+          <div class="service-detail">
+            <span class="detail-key">Focal Person:</span>
+            <span class="detail-value">${focalPerson}</span>
+          </div>
+        `;
+      }
+      
+      // Phone Number
+      if (modalColumnConfig.find(col => col.id === 'phone').visible) {
+        serviceDetailsHTML += `
+          <div class="service-detail">
+            <span class="detail-key">Phone:</span>
+            <span class="detail-value">${phone}</span>
+          </div>
+        `;
+      }
+      
+      // Coordinates
+      if (modalColumnConfig.find(col => col.id === 'coordinates').visible && !isNaN(coords.lat) && !isNaN(coords.lon)) {
+        serviceDetailsHTML += `
+          <div class="service-detail">
+            <span class="detail-key">Coordinates:</span>
+            <span class="detail-value">${coords.lat.toFixed(6)}, ${coords.lon.toFixed(6)}</span>
+          </div>
+        `;
+      }
+      
+      // Map Action
+      if (modalColumnConfig.find(col => col.id === 'map_action').visible && !isNaN(coords.lat) && !isNaN(coords.lon)) {
+        const goToLocationBtn = `<button class="go-to-location-btn" data-lat="${coords.lat}" data-lon="${coords.lon}" data-provider="${provider}" title="Pin this location on the map">
+             <i class="fas fa-map-marker-alt me-1"></i> Go to Location
+           </button>`;
+        
+        serviceDetailsHTML += `
+          <div class="service-detail">
+            <span class="detail-key">Map Action:</span>
+            <span class="detail-value">${goToLocationBtn}</span>
+          </div>
+        `;
+      }
+      
+      // Add sector information if available
+      if (service.sector || service.Sector || service.SECTOR) {
+        serviceDetailsHTML += `
+          <div class="service-detail">
+            <span class="detail-key">Sector:</span>
+            <span class="detail-value">${service.sector || service.Sector || service.SECTOR}</span>
+          </div>
+        `;
+      }
+      
+      // Add service location information if available
+      if (service['Where is the service provision point located?']) {
+        serviceDetailsHTML += `
+          <div class="service-detail">
+            <span class="detail-key">Service Location:</span>
+            <span class="detail-value">${service['Where is the service provision point located?']}</span>
+          </div>
+        `;
+      }
+      
+      // Add mobile approach information if available
+      if (service['Does the organization provide services in the catchment area through a mobile approach, without a fixed location?']) {
+        serviceDetailsHTML += `
+          <div class="service-detail">
+            <span class="detail-key">Mobile Approach:</span>
+            <span class="detail-value">${service['Does the organization provide services in the catchment area through a mobile approach, without a fixed location?']}</span>
+          </div>
+        `;
+      }
+      
+      // Add "If other, please specify" information if available
+      if (service['If other, please specify']) {
+        serviceDetailsHTML += `
+          <div class="service-detail">
+            <span class="detail-key">Other Details:</span>
+            <span class="detail-value">${service['If other, please specify']}</span>
+          </div>
+        `;
+      }
+      
+      servicesHTML += `
+        <div class="col-12 mb-2">
+          <div class="service-card">
+            <div class="service-header">
+              <div>
+                <div class="service-title">${provider}</div>
+                <div class="service-provider"></div>
+              </div>
+              ${!isNaN(coords.lat) && !isNaN(coords.lon) ? 
+                `<span class="badge bg-success" style="font-size: 0.7rem;">Mapped</span>` : 
+                `<span class="badge bg-warning" style="font-size: 0.7rem;">No Coordinates</span>`
+              }
+            </div>
+            <div class="service-details">
+              ${serviceDetailsHTML}
+            </div>
+          </div>
+        </div>
+      `;
+    });
+    
+    servicesHTML += `</div></div>`;
+  });
+  
+  container.innerHTML = servicesHTML;
+}
+
+// Get sector from services for display in category header
+function getSectorFromServices(services) {
+  if (services.length === 0) return '';
+  
+  // Try to get sector from the first service
+  const firstService = services[0];
+  const sector = firstService.sector || firstService.Sector || firstService.SECTOR || '';
+  
+  return sector ? `${sector}` : '';
+}
+
+// Open detail modal for a location
+function openDetailModal(location) {
+  // Store current location for refreshing
+  currentModalLocation = location;
+  
+  // Update location information
+  const locationInfoDiv = document.getElementById('locationInfo');
+  
+  locationInfoDiv.innerHTML = `
+    <div class="service-detail">
+      <span class="location-info-key">Region:</span>
+      <span class="location-info-value">${location.Region || 'N/A'}</span>
+    </div>
+    <div class="service-detail">
+      <span class="location-info-key">Zone:</span>
+      <span class="location-info-value">${location.Zone || 'N/A'}</span>
+    </div>
+    <div class="service-detail">
+      <span class="location-info-key">Woreda:</span>
+      <span class="location-info-value">${location.Woreda || 'N/A'}</span>
+    </div>
+    <div class="service-detail">
+      <span class="location-info-key">Community Center:</span>
+      <span class="location-info-value">${location['Community Center'] || 'N/A'}</span>
+    </div>
+    <div class="service-detail">
+      <span class="location-info-key">CCCM Agency:</span>
+      <span class="location-info-value">${location['CCCM Agency'] || 'N/A'}</span>
+    </div>
+    ${!isNaN(location._lat) && !isNaN(location._lon) ? `
+    <div class="service-detail">
+      <span class="location-info-key">Coordinates:</span>
+      <span class="location-info-value">${location._lat.toFixed(6)}, ${location._lon.toFixed(6)}</span>
+    </div>
+    ` : ''}
+  `;
+  
+  // Update linked services with categorization
+  updateLinkedServices(location);
+  
+  // Show modal first, then initialize map
+  const modal = new bootstrap.Modal(document.getElementById('detailModal'));
+  modal.show();
+  
+  // Initialize modal map after the modal is shown
+  document.getElementById('detailModal').addEventListener('shown.bs.modal', function() {
+    initializeModalMap(location);
+  }, { once: true });
+}
+
+// Update linked services display with categorization
+function updateLinkedServices(location) {
+  // Get all linked services
+  const linkedServices = getLinkedServices(location);
+  
+  // Categorize services
+  const { ccServices, caServices, otherServices } = categorizeServices(linkedServices);
+  
+  // Update tab counts
+  document.getElementById('cc-count').textContent = Object.values(ccServices).reduce((sum, services) => sum + services.length, 0);
+  document.getElementById('ca-count').textContent = Object.values(caServices).reduce((sum, services) => sum + services.length, 0);
+  document.getElementById('other-count').textContent = Object.values(otherServices).reduce((sum, services) => sum + services.length, 0);
+  
+  // Render services for each category
+  renderServiceCategory('cc-services', ccServices, 'Community Center');
+  renderServiceCategory('ca-services', caServices, 'Catchment Area');
+  renderServiceCategory('other-services', otherServices, 'Other');
+}
+
+// Auto-load the Excel file by simulating a file input
+function autoLoadExcelFile() {
+  const fileName = "Catchment Area Service Mapping - September.xlsx";
+  
+  // Show loading state
+  document.getElementById('fileStatus').textContent = 'Looking for data file...';
+  showAutoLoadNotification('Looking for data file...');
+  
+  // First try to fetch via HTTP (works when served from a web server)
+  fetch(fileName)
+    .then(response => {
+      if (response.ok) {
+        return response.blob();
+      }
+      throw new Error('File not found via HTTP');
+    })
+    .then(blob => {
+      // Create a File object from the blob
+      const file = new File([blob], fileName, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      processWorkbook(file);
+      showAutoLoadNotification('Data loaded successfully!');
+    })
+    .catch(error => {
+      console.log('HTTP fetch failed:', error.message);
+      
+      // If HTTP fetch fails, show instructions for manual loading
+      document.getElementById('fileStatus').textContent = 'Please select Excel file manually';
+      showAutoLoadNotification('Please select the Excel file manually using the file input below');
+      
+      // Make the file input more prominent
+      const fileInput = document.getElementById('fileInput');
+      fileInput.style.border = '2px solid #1abc9c';
+      fileInput.style.backgroundColor = '#f8fff8';
+      
+      console.log('Please upload the Excel file manually using the file input');
+    });
+}
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize main map
+  initializeMainMap();
+  
+  // Initialize column controls
+  initializeColumnControls();
+  
+  // Initialize modal column controls
+  initializeModalColumnControls();
+  
+  // Toggle column controls button
+  document.getElementById('toggleColumnsBtn').addEventListener('click', toggleColumnControls);
+  
+  // Toggle modal column controls button
+  document.getElementById('toggleModalColumnsBtn').addEventListener('click', toggleModalColumnControls);
+  
+  // File input change event
+  document.getElementById('fileInput').addEventListener('change', function(e) {
+    if (e.target.files.length > 0) {
+      processWorkbook(e.target.files[0]);
+    }
+  });
+  
+  // Add event delegation for dynamically created elements
+  document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('view-details-btn') || e.target.closest('.view-details-btn')) {
+      const button = e.target.classList.contains('view-details-btn') ? e.target : e.target.closest('.view-details-btn');
+      const index = button.getAttribute('data-index');
+      const location = mainSheetData.find(loc => String(loc._index) === String(index));
+      if (location) {
+        openDetailModal(location);
+      }
+    }
+    
+    // Handle click on location names in the table
+    if (e.target.classList.contains('clickable-location')) {
+      const index = e.target.getAttribute('data-index');
+      const location = mainSheetData.find(loc => String(loc._index) === String(index));
+      if (location) {
+        zoomToLocation(location);
+      }
+    }
+    
+    // Handle "Go to Location" buttons in service cards and map popups
+    if (e.target.classList.contains('go-to-location-btn') || e.target.closest('.go-to-location-btn')) {
+      const button = e.target.classList.contains('go-to-location-btn') ? e.target : e.target.closest('.go-to-location-btn');
+      const lat = parseFloat(button.getAttribute('data-lat'));
+      const lon = parseFloat(button.getAttribute('data-lon'));
+      const provider = button.getAttribute('data-provider') || 'Service Location';
+      
+      if (!isNaN(lat) && !isNaN(lon)) {
+        // Add a pinned marker to the modal map
+        if (modalMap) {
+          clearPinnedMarkers(); // Clear previous pins
+          addPinnedMarker(lat, lon, 'Service Location', provider);
+        }
+        
+        console.log(`Pinned service location for ${provider} at ${lat}, ${lon} on modal map`);
+      }
+    }
+  });
+  
+  // Auto-load the file when the page opens
+  autoLoadExcelFile();
+});
+
+// Export functions for global access (optional)
+window.processWorkbook = processWorkbook;
+window.openDetailModal = openDetailModal;
+window.initializeModalMap = initializeModalMap;
+window.zoomToLocation = zoomToLocation;
+</script>
+</body>
+</html>
