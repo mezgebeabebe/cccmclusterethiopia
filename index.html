@@ -592,45 +592,52 @@
     </div>
     
     <div class="col-lg-4 mb-3">
-      <div class="card h-100">
-        <div class="card-header">
-          <i class="fas fa-info-circle me-2"></i>Dashboard Information
-        </div>
-        <div class="card-body">
-          <p class="mb-2" style="font-size: 0.85rem;">This dashboard automatically processes all sheets from your Excel file and links them using the <code>index</code> and <code>parentindex</code> columns.</p>
-          
-          <div class="mb-2">
-            <h6 style="font-size: 0.9rem;"><i class="fas fa-upload feature-icon"></i>Update Data</h6>
-            <div class="file-fallback mb-2">
-              <input id="fileInput" type="file" accept=".xlsx,.xls" class="form-control form-control-sm" />
-            </div>
-            <div class="small text-muted">Supported formats: .xlsx, .xls</div>
-          </div>
-          
-          <div class="mb-2">
-            <h6 style="font-size: 0.9rem;"><i class="fas fa-map-marker-alt feature-icon"></i>Map Features</h6>
-            <ul class="small" style="font-size: 0.8rem;">
-              <li>Click on map markers to view detailed information</li>
-              <li>Different colors represent different service sectors</li>
-              <li>Use controls to zoom and navigate the map</li>
-              <li>Red markers indicate locations with services</li>
-              <li>Click location names to zoom to them on the map</li>
-            </ul>
-          </div>
-          
-          <div>
-            <h6 style="font-size: 0.9rem;"><i class="fas fa-table feature-icon"></i>Table Features</h6>
-            <ul class="small" style="font-size: 0.8rem;">
-              <li>Click any row to view all linked services</li>
-              <li>Search and filter using the table controls</li>
-              <li>View comprehensive service information</li>
-              <li>Service counts shown in the linked column</li>
-              <li>Use column visibility controls to show/hide columns</li>
-            </ul>
-          </div>
-        </div>
+  <div class="card h-100">
+    <div class="card-header">
+      <i class="fas fa-people-carry me-2"></i>About CCCM Cluster
+    </div>
+    <div class="card-body">
+      <div class="mb-3">
+        <h6 style="font-size: 0.95rem; color: var(--primary-color);"><i class="fas fa-bullseye me-2"></i>Our Mission</h6>
+        <p class="small" style="font-size: 0.85rem; line-height: 1.5;">
+          The Camp Coordination and Camp Management (CCCM) Cluster ensures coordinated, equitable, and accountable 
+          service delivery to displaced populations and affected communities through area-based approaches.
+        </p>
+      </div>
+      
+      <div class="mb-3">
+        <h6 style="font-size: 0.95rem; color: var(--primary-color);"><i class="fas fa-map-marked-alt me-2"></i>Area-Based Approach</h6>
+        <p class="small" style="font-size: 0.85rem; line-height: 1.5;">
+          This dashboard visualizes our area-based coordination model, mapping service providers across community centers 
+          and catchment areas to identify gaps, avoid duplication, and enhance service coverage for vulnerable communities.
+        </p>
+      </div>
+      
+      <div class="mb-3">
+        <h6 style="font-size: 0.95rem; color: var(--primary-color);"><i class="fas fa-hands-helping me-2"></i>Multi-Sector Coordination</h6>
+        <p class="small" style="font-size: 0.85rem; line-height: 1.5;">
+          We coordinate across all sectors - including WASH, Shelter, Food Security, Protection, Health, and Education - 
+          to ensure comprehensive support reaches every community through structured service mapping and gap analysis.
+        </p>
+      </div>
+      
+      <div class="mb-3">
+        <h6 style="font-size: 0.95rem; color: var(--primary-color);"><i class="fas fa-chart-line me-2"></i>Data-Driven Response</h6>
+        <p class="small" style="font-size: 0.85rem; line-height: 1.5;">
+          This interactive platform enables evidence-based decision making by providing real-time visibility of service 
+          distribution, provider locations, and coverage gaps across all operational areas.
+        </p>
+      </div>
+      
+      <div class="mt-4 p-3" style="background: linear-gradient(135deg, #f8f9fa, #e9ecef); border-radius: 6px; border-left: 4px solid var(--accent-color);">
+        <p class="small mb-0" style="font-size: 0.8rem; font-style: italic; line-height: 1.4;">
+          <i class="fas fa-quote-left me-1 text-muted"></i>
+          Through coordinated area-based approaches, we ensure no community is left behind and every service reaches those who need it most.
+        </p>
       </div>
     </div>
+  </div>
+</div>
   </div>
 
   <div class="card">
@@ -1951,20 +1958,14 @@ function autoLoadExcelFile() {
       processWorkbook(file);
       showAutoLoadNotification('Data loaded successfully!');
     })
-    .catch(error => {
-      console.log('HTTP fetch failed:', error.message);
-      
-      // If HTTP fetch fails, show instructions for manual loading
-      document.getElementById('fileStatus').textContent = 'Please select Excel file manually';
-      showAutoLoadNotification('Please select the Excel file manually using the file input below');
-      
-      // Make the file input more prominent
-      const fileInput = document.getElementById('fileInput');
-      fileInput.style.border = '2px solid #1abc9c';
-      fileInput.style.backgroundColor = '#f8fff8';
-      
-      console.log('Please upload the Excel file manually using the file input');
-    });
+    // In the catch block, remove the file input styling and instructions:
+.catch(error => {
+  console.log('HTTP fetch failed:', error.message);
+  
+  // Remove or simplify this message since there's no file input anymore
+  document.getElementById('fileStatus').textContent = 'Data loading required';
+  showAutoLoadNotification('Data file will be loaded automatically');
+});
 }
 // Event listeners
 document.addEventListener('DOMContentLoaded', function() {
@@ -1984,11 +1985,11 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('toggleModalColumnsBtn').addEventListener('click', toggleModalColumnControls);
   
   // File input change event
-  document.getElementById('fileInput').addEventListener('change', function(e) {
-    if (e.target.files.length > 0) {
-      processWorkbook(e.target.files[0]);
-    }
-  });
+  //document.getElementById('fileInput').addEventListener('change', function(e) {
+  //  if (e.target.files.length > 0) {
+   //   processWorkbook(e.target.files[0]);
+   // }
+ // });
   
   // Add event delegation for dynamically created elements
   document.addEventListener('click', function(e) {
@@ -2040,4 +2041,5 @@ window.initializeModalMap = initializeModalMap;
 window.zoomToLocation = zoomToLocation;
 </script>
 </body>
+
 </html>
