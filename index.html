@@ -2492,6 +2492,16 @@ function renderSectorServices(sectorName) {
                 <span class="detail-key">Phone:</span>
                 <span class="detail-value">${phone}</span>
               </div>
+
+              ${service['Does the organization provide services in the catchment area through a mobile approach, without a fixed location?'] ? `
+                <div class="sector-service-detail">
+                <span class="detail-key">Mobile Approach:</span>
+                <span class="detail-value">${service['Does the organization provide services in the catchment area through a mobile approach, without a fixed location?']}</span>
+              </div>
+              ` : ''}
+
+
+              
               ${!isNaN(coords.lat) && !isNaN(coords.lon) ? `
               <div class="sector-service-detail">
                 <span class="detail-key">Coordinates:</span>
@@ -2761,4 +2771,5 @@ window.zoomToLocation = zoomToLocation;
 </script>
 </body>
 </html>
+
 
