@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <title>Catchment Area Service Mapping — Interactive Dashboard</title>
 
   <!-- Bootstrap 5 -->
@@ -28,6 +28,8 @@
       min-height: 100vh;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       font-size: 0.9rem;
+      -webkit-text-size-adjust: 100%;
+      touch-action: manipulation;
     }
     
     .dashboard-header {
@@ -231,13 +233,13 @@
     
     .detail-key {
       font-weight: 600;
-      color: #2c5aa0; /* Blue color for keys */
+      color: #2c5aa0;
       min-width: 120px;
       display: inline-block;
     }
     
     .detail-value {
-      color: #555; /* Neutral color for values */
+      color: #555;
     }
     
     .loading-overlay {
@@ -510,7 +512,7 @@
       margin-bottom: 0;
     }
     
-    /* Responsive adjustments */
+    /* Mobile-specific fixes */
     @media (max-width: 768px) {
       .stats-number {
         font-size: 1.5rem;
@@ -535,8 +537,108 @@
       .view-toggle {
         flex-direction: column;
       }
+      
+      /* Improve touch targets for mobile */
+      .btn, .nav-link, .clickable-location, .view-details-btn, .go-to-location-btn {
+        min-height: 44px;
+        min-width: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        touch-action: manipulation;
+      }
+      
+      /* Improve table touch interactions */
+      .table-hover tbody tr {
+        padding: 8px 0;
+      }
+      
+      /* Fix modal for mobile */
+      .modal-dialog {
+        margin: 10px;
+        width: calc(100% - 20px);
+        max-height: 90vh;
+      }
+      
+      .modal-content {
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+      
+      /* Improve map controls for touch */
+      .leaflet-control-zoom a {
+        width: 40px;
+        height: 40px;
+        line-height: 40px;
+        font-size: 18px;
+      }
+      
+      .map-overlay .btn-group-sm .btn {
+        min-height: 36px;
+        min-width: 36px;
+      }
+      
+      /* Better touch feedback */
+      .card, .service-card, .stats-card, .table-hover tbody tr {
+        -webkit-tap-highlight-color: rgba(0,0,0,0.1);
+        transition: all 0.2s ease;
+      }
+      
+      .card:active, .service-card:active, .stats-card:active, .table-hover tbody tr:active {
+        transform: scale(0.98);
+        background-color: rgba(0,0,0,0.02);
+      }
     }
     
+    /* Cross-browser compatibility */
+    @media (max-width: 576px) {
+      .container {
+        padding-left: 10px;
+        padding-right: 10px;
+      }
+      
+      .dashboard-header .container {
+        padding-left: 15px;
+        padding-right: 15px;
+      }
+      
+      .modal-body {
+        padding: 0.75rem;
+      }
+      
+      .location-info-card, .service-card {
+        padding: 0.75rem;
+      }
+    }
+    
+    /* Prevent text selection on interactive elements */
+    .clickable-location, .btn, .nav-link, .view-details-btn, .go-to-location-btn {
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
+    
+    /* Fix for iOS Safari */
+    @supports (-webkit-touch-callout: none) {
+      .map-container, #mainMap, #modalMap, #sectorModalMap {
+        -webkit-overflow-scrolling: touch;
+      }
+      
+      body {
+        -webkit-overflow-scrolling: touch;
+      }
+    }
+    
+    /* Fix for Chrome mobile */
+    @media (max-width: 768px) {
+      .dataTables_wrapper .dataTables_filter input,
+      .dataTables_wrapper .dataTables_length select {
+        font-size: 16px; /* Prevents zoom on focus in iOS */
+      }
+    }
+
     /* Compact grid adjustments */
     .compact-grid .row {
       margin-bottom: 0.5rem;
@@ -589,8 +691,8 @@
       border-radius: 8px;
       overflow: hidden;
       box-shadow: 0 3px 10px rgba(0,0,0,0.08);
-      height: 100%; /* Add this */
-      min-height: 400px; /* Add this for minimum height */
+      height: 100%;
+      min-height: 400px;
     }
 
     /* Ensure the map itself fills the container */
@@ -602,6 +704,11 @@
     /* Fix for card body in map card */
     .card-body.p-0 {
       height: 100%;
+    }
+
+    /* Loading animation improvements */
+    .spinner-border {
+      animation-duration: 0.75s;
     }
   </style>
 </head>
@@ -713,16 +820,16 @@
           </div>
           
           <div class="mb-3">
-            <h6 style="font-size: 0.95rem; color: var(--primary-color);"><i class="fas fa-map-marked-alt me-2"></i>Area-Based Approach</h6>
+            <h6 style="font-size: 0.95rem; color: var(--primary-color);"><i class="fas fa-map-marked-alt me-2"></i>Response Area Coverage</h6>
             <p class="small" style="font-size: 0.85rem; line-height: 1.5;">
-              This dashboard visualizes our Catchment Area Service Providers across catchment areas to identify gaps, avoid duplication, and enhance service coverage for vulnerable communities.
+              This dashboard presents CCCM cluster’s coverage area (the coverage area is the geographical location that constitutes the main entry point for the implementation of the programme where the displaced population is high) in out-of-camp settings, highlighting service providers’ presence and their response. It supports gap identification, efforts for preventing duplication, and strengthening service delivery for vulnerable communities.
             </p>
           </div>
           
           <div class="mb-3">
             <h6 style="font-size: 0.95rem; color: var(--primary-color);"><i class="fas fa-hands-helping me-2"></i>Multi-Sector Coordination</h6>
             <p class="small" style="font-size: 0.85rem; line-height: 1.5;">
-              We coordinate across all sectors to ensure comprehensive support reaches every community through structured service mapping and gap analysis.
+              The CCCM cluster coordinates across all sectors to ensure displaced communities receive comprehensive support through structured service mapping and gap analysis. As the only cluster mandated to coordinate intersectoral services including but not limited to Shelter, WASH, Health, Protection, food, etc., the CCCM cluster serves as a key accountability mechanism and a bridge between communities and humanitarian, and local government actors. CCCM also empowers affected populations to shape the response and contribute to durable solutions.
             </p>
           </div>
           
@@ -1325,6 +1432,22 @@ function initializeMainMap() {
     document.getElementById('zoomOut').addEventListener('click', () => mainMap.zoomOut());
     document.getElementById('resetView').addEventListener('click', () => mainMap.setView([9.1450, 40.4897], 6));
     
+    // Add touch events for mobile
+    document.getElementById('zoomIn').addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      mainMap.zoomIn();
+    }, { passive: false });
+    
+    document.getElementById('zoomOut').addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      mainMap.zoomOut();
+    }, { passive: false });
+    
+    document.getElementById('resetView').addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      mainMap.setView([9.1450, 40.4897], 6);
+    }, { passive: false });
+    
     console.log('Main map initialized');
   }
 }
@@ -1505,6 +1628,18 @@ function initializeModalMap(location) {
   mapDiv.style.height = '400px';
   mapDiv.style.width = '100%';
   
+  // Force a reflow to ensure DOM is updated
+  mapDiv.offsetHeight;
+
+  // Initialize map immediately
+  modalMap = L.map('modalMap').setView([9.1450, 40.4897], 6);
+  
+  // Add tile layer with error handling
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(modalMap);
+  
   // Get all linked services for this location
   const linkedServices = getLinkedServices(location);
   
@@ -1536,101 +1671,91 @@ function initializeModalMap(location) {
     zoom = allPoints.length === 1 ? 10 : 8;
   }
   
-  // Create new map with a slight delay to ensure DOM is ready
-  setTimeout(() => {
-    modalMap = L.map('modalMap').setView([centerLat, centerLon], zoom);
-    
-    // Add tile layer with error handling
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  // Update map view
+  modalMap.setView([centerLat, centerLon], zoom);
+  
+  const bounds = [];
+  let servicePointsCount = 0;
+  
+  // Add main location marker if coordinates are valid
+  if (!isNaN(location._lat) && !isNaN(location._lon)) {
+    const mainMarker = L.circleMarker([location._lat, location._lon], {
+      color: '#3498db',
+      fillColor: '#3498db',
+      fillOpacity: 0.9,
+      radius: 10,
+      weight: 2
     }).addTo(modalMap);
     
-    const bounds = [];
-    let servicePointsCount = 0;
+    mainMarker.bindPopup(`
+      <div style="min-width: 220px;">
+        <h6 style="font-size: 0.9rem;"><strong><i class="fas fa-home me-1"></i>${location['Community Center'] || 'Location ' + location._index}</strong></h6>
+        <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Type:</span> <span class="popup-value">Main Community Center</span></p>
+        <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Region:</span> <span class="popup-value">${location.Region || 'N/A'}</span></p>
+        <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Zone:</span> <span class="popup-value">${location.Zone || 'N/A'}</span></p>
+        <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Woreda:</span> <span class="popup-value">${location.Woreda || 'N/A'}</span></p>
+        <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">CCCM Agency:</span> <span class="popup-value">${location['CCCM Agency'] || 'N/A'}</span></p>
+        <p class="mb-0" style="font-size: 0.8rem;"><span class="popup-key">Coordinates:</span> <span class="popup-value">${location._lat.toFixed(6)}, ${location._lon.toFixed(6)}</span></p>
+      </div>
+    `);
     
-    // Add main location marker if coordinates are valid
-    if (!isNaN(location._lat) && !isNaN(location._lon)) {
-      const mainMarker = L.circleMarker([location._lat, location._lon], {
-        color: '#3498db',
-        fillColor: '#3498db',
-        fillOpacity: 0.9,
-        radius: 10,
-        weight: 2
+    bounds.push([location._lat, location._lon]);
+  }
+  
+  // Add service locations from all linked sheets
+  linkedServices.forEach((service, index) => {
+    const coords = parseServiceCoordinates(service);
+    
+    if (!isNaN(coords.lat) && !isNaN(coords.lon)) {
+      servicePointsCount++;
+      
+      // Get color for this service type
+      const color = serviceColors[service._sheetName.toLowerCase()] || serviceColors['default'];
+      const provider = getOrganizationName(service);
+      const services = service.Services || service.services || service.SERVICES || 
+                      service['If yes, please specify the services'] || service['other services'] || 
+                      service['ACDD'] || 'Not specified';
+      const focalPerson = service['Focal Person Name'] || service['Focal Person'] || service['FOCAL PERSON'] || 'Not specified';
+      
+      const serviceMarker = L.circleMarker([coords.lat, coords.lon], {
+        color: color,
+        fillColor: color,
+        fillOpacity: 0.7,
+        radius: 6,
+        weight: 1
       }).addTo(modalMap);
       
-      mainMarker.bindPopup(`
-        <div style="min-width: 220px;">
-          <h6 style="font-size: 0.9rem;"><strong><i class="fas fa-home me-1"></i>${location['Community Center'] || 'Location ' + location._index}</strong></h6>
-          <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Type:</span> <span class="popup-value">Main Community Center</span></p>
-          <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Region:</span> <span class="popup-value">${location.Region || 'N/A'}</span></p>
-          <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Zone:</span> <span class="popup-value">${location.Zone || 'N/A'}</span></p>
-          <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Woreda:</span> <span class="popup-value">${location.Woreda || 'N/A'}</span></p>
-          <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">CCCM Agency:</span> <span class="popup-value">${location['CCCM Agency'] || 'N/A'}</span></p>
-          <p class="mb-0" style="font-size: 0.8rem;"><span class="popup-key">Coordinates:</span> <span class="popup-value">${location._lat.toFixed(6)}, ${location._lon.toFixed(6)}</span></p>
+      serviceMarker.bindPopup(`
+        <div style="min-width: 240px;">
+          <h6 style="font-size: 0.9rem;"><strong><i class="fas fa-hands-helping me-1"></i>${provider}</strong></h6>
+          <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Service Type:</span> <span class="popup-value">${getServiceCategoryName(service._sheetName)}</span></p>
+          <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Services Provided:</span> <span class="popup-value">${services}</span></p>
+          <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Focal Person:</span> <span class="popup-value">${focalPerson}</span></p>
+          <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Phone:</span> <span class="popup-value">${service['Phone Number'] || service['Phone'] || service['PHONE'] || 'Not specified'}</span></p>
+          <p class="mb-0" style="font-size: 0.8rem;"><span class="popup-key">Coordinates:</span> <span class="popup-value">${coords.lat.toFixed(6)}, ${coords.lon.toFixed(6)}</span></p>
+          <div class="mt-1">
+            <button class="go-to-location-btn" data-lat="${coords.lat}" data-lon="${coords.lon}" data-provider="${provider}">
+              <i class="fas fa-map-marker-alt me-1"></i> Pin This Location
+            </button>
+          </div>
         </div>
       `);
       
-      bounds.push([location._lat, location._lon]);
-      console.log('Main location marker added at:', location._lat, location._lon);
+      bounds.push([coords.lat, coords.lon]);
     }
-    
-    // Add service locations from all linked sheets
-    linkedServices.forEach((service, index) => {
-      const coords = parseServiceCoordinates(service);
-      
-      if (!isNaN(coords.lat) && !isNaN(coords.lon)) {
-        servicePointsCount++;
-        
-        // Get color for this service type
-        const color = serviceColors[service._sheetName.toLowerCase()] || serviceColors['default'];
-        const provider = getOrganizationName(service);
-        const services = service.Services || service.services || service.SERVICES || 
-                        service['If yes, please specify the services'] || service['other services'] || 
-                        service['ACDD'] || 'Not specified';
-        const focalPerson = service['Focal Person Name'] || service['Focal Person'] || service['FOCAL PERSON'] || 'Not specified';
-        
-        const serviceMarker = L.circleMarker([coords.lat, coords.lon], {
-          color: color,
-          fillColor: color,
-          fillOpacity: 0.7,
-          radius: 6,
-          weight: 1
-        }).addTo(modalMap);
-        
-        serviceMarker.bindPopup(`
-          <div style="min-width: 240px;">
-            <h6 style="font-size: 0.9rem;"><strong><i class="fas fa-hands-helping me-1"></i>${provider}</strong></h6>
-            <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Service Type:</span> <span class="popup-value">${getServiceCategoryName(service._sheetName)}</span></p>
-            <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Services Provided:</span> <span class="popup-value">${services}</span></p>
-            <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Focal Person:</span> <span class="popup-value">${focalPerson}</span></p>
-            <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Phone:</span> <span class="popup-value">${service['Phone Number'] || service['Phone'] || service['PHONE'] || 'Not specified'}</span></p>
-            <p class="mb-0" style="font-size: 0.8rem;"><span class="popup-key">Coordinates:</span> <span class="popup-value">${coords.lat.toFixed(6)}, ${coords.lon.toFixed(6)}</span></p>
-            <div class="mt-1">
-              <button class="go-to-location-btn" data-lat="${coords.lat}" data-lon="${coords.lon}" data-provider="${provider}">
-                <i class="fas fa-map-marker-alt me-1"></i> Pin This Location
-              </button>
-            </div>
-          </div>
-        `);
-        
-        bounds.push([coords.lat, coords.lon]);
-        console.log(`Service marker ${index} added for ${service._sheetName} at:`, coords.lat, coords.lon);
-      }
-    });
-    
-    // Fit map to show all markers if we have any
-    if (bounds.length > 0) {
-      modalMap.fitBounds(bounds, { padding: [20, 20] });
+  });
+  
+  // Fit map to show all markers if we have any
+  if (bounds.length > 0) {
+    modalMap.fitBounds(bounds, { padding: [20, 20] });
+  }
+  
+  // Force map to resize and render properly after modal is shown
+  setTimeout(() => {
+    if (modalMap) {
+      modalMap.invalidateSize(true);
     }
-    
-    // Force map to resize and render properly after modal is shown
-    setTimeout(() => {
-      if (modalMap) {
-        modalMap.invalidateSize(true);
-      }
-    }, 300);
-  }, 100);
+  }, 300);
 }
 
 // Initialize sector modal map
@@ -1647,6 +1772,18 @@ function initializeSectorModalMap(sectorName) {
   mapDiv.innerHTML = '';
   mapDiv.style.height = '400px';
   mapDiv.style.width = '100%';
+  
+  // Force a reflow to ensure DOM is updated
+  mapDiv.offsetHeight;
+
+  // Initialize map immediately
+  sectorModalMap = L.map('sectorModalMap').setView([9.1450, 40.4897], 6);
+  
+  // Add tile layer with error handling
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(sectorModalMap);
   
   // Get all services for this sector
   const sectorServices = getSectorServices(sectorName);
@@ -1674,72 +1811,63 @@ function initializeSectorModalMap(sectorName) {
     zoom = allPoints.length === 1 ? 10 : 8;
   }
   
-  // Create new map with a slight delay to ensure DOM is ready
-  setTimeout(() => {
-    sectorModalMap = L.map('sectorModalMap').setView([centerLat, centerLon], zoom);
+  // Update map view
+  sectorModalMap.setView([centerLat, centerLon], zoom);
+  
+  const bounds = [];
+  let servicePointsCount = 0;
+  
+  // Add service locations from this sector
+  sectorServices.forEach((service, index) => {
+    const coords = parseServiceCoordinates(service);
     
-    // Add tile layer with error handling
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(sectorModalMap);
-    
-    const bounds = [];
-    let servicePointsCount = 0;
-    
-    // Add service locations from this sector
-    sectorServices.forEach((service, index) => {
-      const coords = parseServiceCoordinates(service);
+    if (!isNaN(coords.lat) && !isNaN(coords.lon)) {
+      servicePointsCount++;
       
-      if (!isNaN(coords.lat) && !isNaN(coords.lon)) {
-        servicePointsCount++;
-        
-        // Get color for this service type
-        const color = serviceColors[service._sheetName.toLowerCase()] || serviceColors['default'];
-        const provider = getOrganizationName(service);
-        const services = service.Services || service.services || service.SERVICES || 
-                        service['If yes, please specify the services'] || service['other services'] || 
-                        service['ACDD'] || 'Not specified';
-        const focalPerson = service['Focal Person Name'] || service['Focal Person'] || service['FOCAL PERSON'] || 'Not specified';
-        
-        const serviceMarker = L.circleMarker([coords.lat, coords.lon], {
-          color: color,
-          fillColor: color,
-          fillOpacity: 0.7,
-          radius: 6,
-          weight: 1
-        }).addTo(sectorModalMap);
-        
-        serviceMarker.bindPopup(`
-          <div style="min-width: 240px;">
-            <h6 style="font-size: 0.9rem;"><strong><i class="fas fa-hands-helping me-1"></i>${provider}</strong></h6>
-            <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Service Type:</span> <span class="popup-value">${getServiceCategoryName(service._sheetName)}</span></p>
-            <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Services Provided:</span> <span class="popup-value">${services}</span></p>
-            <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Focal Person:</span> <span class="popup-value">${focalPerson}</span></p>
-            <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Phone:</span> <span class="popup-value">${service['Phone Number'] || service['Phone'] || service['PHONE'] || 'Not specified'}</span></p>
-            <p class="mb-0" style="font-size: 0.8rem;"><span class="popup-key">Coordinates:</span> <span class="popup-value">${coords.lat.toFixed(6)}, ${coords.lon.toFixed(6)}</span></p>
-          </div>
-        `);
-        
-        bounds.push([coords.lat, coords.lon]);
-        console.log(`Sector service marker ${index} added for ${service._sheetName} at:`, coords.lat, coords.lon);
-      }
-    });
-    
-    // Fit map to show all markers if we have any
-    if (bounds.length > 0) {
-      sectorModalMap.fitBounds(bounds, { padding: [20, 20] });
+      // Get color for this service type
+      const color = serviceColors[service._sheetName.toLowerCase()] || serviceColors['default'];
+      const provider = getOrganizationName(service);
+      const services = service.Services || service.services || service.SERVICES || 
+                      service['If yes, please specify the services'] || service['other services'] || 
+                      service['ACDD'] || 'Not specified';
+      const focalPerson = service['Focal Person Name'] || service['Focal Person'] || service['FOCAL PERSON'] || 'Not specified';
+      
+      const serviceMarker = L.circleMarker([coords.lat, coords.lon], {
+        color: color,
+        fillColor: color,
+        fillOpacity: 0.7,
+        radius: 6,
+        weight: 1
+      }).addTo(sectorModalMap);
+      
+      serviceMarker.bindPopup(`
+        <div style="min-width: 240px;">
+          <h6 style="font-size: 0.9rem;"><strong><i class="fas fa-hands-helping me-1"></i>${provider}</strong></h6>
+          <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Service Type:</span> <span class="popup-value">${getServiceCategoryName(service._sheetName)}</span></p>
+          <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Services Provided:</span> <span class="popup-value">${services}</span></p>
+          <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Focal Person:</span> <span class="popup-value">${focalPerson}</span></p>
+          <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Phone:</span> <span class="popup-value">${service['Phone Number'] || service['Phone'] || service['PHONE'] || 'Not specified'}</span></p>
+          <p class="mb-0" style="font-size: 0.8rem;"><span class="popup-key">Coordinates:</span> <span class="popup-value">${coords.lat.toFixed(6)}, ${coords.lon.toFixed(6)}</span></p>
+        </div>
+      `);
+      
+      bounds.push([coords.lat, coords.lon]);
     }
-    
-    console.log(`Sector modal map initialized with ${servicePointsCount} service locations for sector ${sectorName}`);
-    
-    // Force map to resize and render properly after modal is shown
-    setTimeout(() => {
-      if (sectorModalMap) {
-        sectorModalMap.invalidateSize(true);
-      }
-    }, 300);
-  }, 100);
+  });
+  
+  // Fit map to show all markers if we have any
+  if (bounds.length > 0) {
+    sectorModalMap.fitBounds(bounds, { padding: [20, 20] });
+  }
+  
+  console.log(`Sector modal map initialized with ${servicePointsCount} service locations for sector ${sectorName}`);
+  
+  // Force map to resize and render properly after modal is shown
+  setTimeout(() => {
+    if (sectorModalMap) {
+      sectorModalMap.invalidateSize(true);
+    }
+  }, 300);
 }
 
 // Get user-friendly service category name
@@ -1857,6 +1985,7 @@ function updateDashboard() {
   renderMainTable();
   renderSectorTable();
   renderMap();
+  setupMobileTouchEvents(); // Setup mobile events after data is loaded
 }
 
 // Update statistics
@@ -1885,6 +2014,57 @@ function updateStatistics() {
     }
   });
   document.getElementById('serviceSheets').textContent = uniqueWoredas.size.toLocaleString();
+}
+
+// Setup mobile touch events
+function setupMobileTouchEvents() {
+  // For table rows
+  document.querySelectorAll('#mainTable tbody tr').forEach(row => {
+    // Remove existing event listeners to avoid duplicates
+    const newRow = row.cloneNode(true);
+    row.parentNode.replaceChild(newRow, row);
+    
+    newRow.addEventListener('touchstart', function(e) {
+      e.preventDefault();
+      const index = this.getAttribute('data-index');
+      const location = mainSheetData.find(loc => String(loc._index) === String(index));
+      if (location) {
+        openDetailModal(location);
+      }
+    }, { passive: false });
+    
+    // Keep click event for desktop
+    newRow.addEventListener('click', function() {
+      const index = this.getAttribute('data-index');
+      const location = mainSheetData.find(loc => String(loc._index) === String(index));
+      if (location) {
+        openDetailModal(location);
+      }
+    });
+  });
+
+  // For clickable locations
+  document.querySelectorAll('.clickable-location').forEach(element => {
+    element.addEventListener('touchstart', function(e) {
+      e.preventDefault();
+      const index = this.getAttribute('data-index');
+      const location = mainSheetData.find(loc => String(loc._index) === String(index));
+      if (location) {
+        zoomToLocation(location);
+      }
+    }, { passive: false });
+  });
+
+  // For buttons
+  document.querySelectorAll('.view-details-btn, .go-to-location-btn, .view-sector-details-btn').forEach(button => {
+    button.addEventListener('touchstart', function(e) {
+      e.preventDefault();
+      // Use a small timeout to ensure the click event fires properly
+      setTimeout(() => {
+        this.click();
+      }, 50);
+    }, { passive: false });
+  });
 }
 
 // Render main table
@@ -1930,7 +2110,6 @@ function renderMainTable() {
       </td>
     `;
     
-    row.addEventListener('click', () => openDetailModal(location));
     tableBody.appendChild(row);
   });
   
@@ -2670,7 +2849,7 @@ function autoLoadExcelFile() {
     })
     .then(blob => {
       // Create a File object from the blob
-      const file = new File([blob], fileName, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const file = new File([blob], fileName, { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
       processWorkbook(file);
       showAutoLoadNotification('Data loaded successfully!');
     })
@@ -2697,21 +2876,43 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Toggle column controls button
   document.getElementById('toggleColumnsBtn').addEventListener('click', toggleColumnControls);
+  document.getElementById('toggleColumnsBtn').addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    toggleColumnControls();
+  }, { passive: false });
   
   // Toggle sector column controls button
   document.getElementById('toggleSectorColumnsBtn').addEventListener('click', toggleSectorColumnControls);
+  document.getElementById('toggleSectorColumnsBtn').addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    toggleSectorColumnControls();
+  }, { passive: false });
   
   // Toggle modal column controls button
   document.getElementById('toggleModalColumnsBtn').addEventListener('click', toggleModalColumnControls);
+  document.getElementById('toggleModalColumnsBtn').addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    toggleModalColumnControls();
+  }, { passive: false });
   
   // View toggle buttons
   document.getElementById('locationViewBtn').addEventListener('click', () => switchView('location'));
+  document.getElementById('locationViewBtn').addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    switchView('location');
+  }, { passive: false });
+  
   document.getElementById('sectorViewBtn').addEventListener('click', () => switchView('sector'));
+  document.getElementById('sectorViewBtn').addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    switchView('sector');
+  }, { passive: false });
   
   // Add event delegation for dynamically created elements
   document.addEventListener('click', function(e) {
-    if (e.target.classList.contains('view-details-btn') || e.target.closest('.view-details-btn')) {
-      const button = e.target.classList.contains('view-details-btn') ? e.target : e.target.closest('.view-details-btn');
+    // Handle view details buttons
+    if (e.target.closest('.view-details-btn')) {
+      const button = e.target.closest('.view-details-btn');
       const index = button.getAttribute('data-index');
       const location = mainSheetData.find(loc => String(loc._index) === String(index));
       if (location) {
@@ -2719,9 +2920,10 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
     
-    // Handle click on location names in the table
-    if (e.target.classList.contains('clickable-location')) {
-      const index = e.target.getAttribute('data-index');
+    // Handle clickable locations
+    if (e.target.closest('.clickable-location')) {
+      const element = e.target.closest('.clickable-location');
+      const index = element.getAttribute('data-index');
       const location = mainSheetData.find(loc => String(loc._index) === String(index));
       if (location) {
         zoomToLocation(location);
@@ -2729,8 +2931,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Handle "Go to Location" buttons in service cards and map popups
-    if (e.target.classList.contains('go-to-location-btn') || e.target.closest('.go-to-location-btn')) {
-      const button = e.target.classList.contains('go-to-location-btn') ? e.target : e.target.closest('.go-to-location-btn');
+    if (e.target.closest('.go-to-location-btn')) {
+      const button = e.target.closest('.go-to-location-btn');
       const lat = parseFloat(button.getAttribute('data-lat'));
       const lon = parseFloat(button.getAttribute('data-lon'));
       const provider = button.getAttribute('data-provider') || 'Service Location';
@@ -2747,14 +2949,49 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Handle sector detail view buttons
-    if (e.target.classList.contains('view-sector-details-btn') || e.target.closest('.view-sector-details-btn')) {
-      const button = e.target.classList.contains('view-sector-details-btn') ? e.target : e.target.closest('.view-sector-details-btn');
+    if (e.target.closest('.view-sector-details-btn')) {
+      const button = e.target.closest('.view-sector-details-btn');
       const sector = button.getAttribute('data-sector');
       if (sector) {
         openSectorDetailModal(sector);
       }
     }
   });
+  
+  // Add touch event delegation for mobile
+  document.addEventListener('touchstart', function(e) {
+    // Handle view details buttons for touch
+    if (e.target.closest('.view-details-btn')) {
+      const button = e.target.closest('.view-details-btn');
+      const index = button.getAttribute('data-index');
+      const location = mainSheetData.find(loc => String(loc._index) === String(index));
+      if (location) {
+        e.preventDefault();
+        openDetailModal(location);
+      }
+    }
+    
+    // Handle clickable locations for touch
+    if (e.target.closest('.clickable-location')) {
+      const element = e.target.closest('.clickable-location');
+      const index = element.getAttribute('data-index');
+      const location = mainSheetData.find(loc => String(loc._index) === String(index));
+      if (location) {
+        e.preventDefault();
+        zoomToLocation(location);
+      }
+    }
+    
+    // Handle sector detail view buttons for touch
+    if (e.target.closest('.view-sector-details-btn')) {
+      const button = e.target.closest('.view-sector-details-btn');
+      const sector = button.getAttribute('data-sector');
+      if (sector) {
+        e.preventDefault();
+        openSectorDetailModal(sector);
+      }
+    }
+  }, { passive: false });
   
   // Auto-load the file when the page opens
   autoLoadExcelFile();
@@ -2769,7 +3006,3 @@ window.zoomToLocation = zoomToLocation;
 </script>
 </body>
 </html>
-
-
-
-
