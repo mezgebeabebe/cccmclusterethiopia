@@ -2102,44 +2102,31 @@ function updateStatistics() {
 }
 
 // Setup mobile touch events
-// Setup mobile touch events - FIXED for pagination
 function setupMobileTouchEvents() {
-  // Use event delegation for the entire table body to handle pagination
-  const tableBody = document.querySelector('#mainTable tbody');
-  
-  if (tableBody) {
-    // Remove any existing event listeners to prevent duplicates
-    tableBody.replaceWith(tableBody.cloneNode(true));
+  // For table rows
+  document.querySelectorAll('#mainTable tbody tr').forEach(row => {
+    // Remove existing event listeners to avoid duplicates
+    const newRow = row.cloneNode(true);
+    row.parentNode.replaceChild(newRow, row);
     
-    // Get the fresh reference after cloning
-    const freshTableBody = document.querySelector('#mainTable tbody');
-    
-    // Add click event delegation
-    freshTableBody.addEventListener('click', function(e) {
-      const row = e.target.closest('tr');
-      if (row) {
-        const index = row.getAttribute('data-index');
-        const location = mainSheetData.find(loc => String(loc._index) === String(index));
-        if (location) {
-          openDetailModal(location);
-        }
-      }
-    });
-    
-    // Add touch event delegation for mobile
-    freshTableBody.addEventListener('touchstart', function(e) {
-      const row = e.target.closest('tr');
-      if (row) {
-        e.preventDefault();
-        const index = row.getAttribute('data-index');
-        const location = mainSheetData.find(loc => String(loc._index) === String(index));
-        if (location) {
-          openDetailModal(location);
-        }
+    newRow.addEventListener('touchstart', function(e) {
+      e.preventDefault();
+      const index = this.getAttribute('data-index');
+      const location = mainSheetData.find(loc => String(loc._index) === String(index));
+      if (location) {
+        openDetailModal(location);
       }
     }, { passive: false });
-  }
-}
+    
+    // Keep click event for desktop
+    newRow.addEventListener('click', function() {
+      const index = this.getAttribute('data-index');
+      const location = mainSheetData.find(loc => String(loc._index) === String(index));
+      if (location) {
+        openDetailModal(location);
+      }
+    });
+  });
 
   // For clickable locations
   document.querySelectorAll('.clickable-location').forEach(element => {
@@ -2171,22 +2158,22 @@ function renderMainTable() {
   tableBody.innerHTML = '';
   
   mainSheetData.forEach(location => {
-  // Count unique service providers (not just services)
-  let uniqueProviders = new Set();
-  Object.keys(serviceSheets).forEach(sheetName => {
-    const linked = serviceSheets[sheetName].filter(service => 
-      String(service._parentindex) === String(location._index));
-    
-    linked.forEach(service => {
-      const provider = getOrganizationName(service);
-      uniqueProviders.add(provider);
+    // Count unique service providers (not just services)
+    let uniqueProviders = new Set();
+    Object.keys(serviceSheets).forEach(sheetName => {
+      const linked = serviceSheets[sheetName].filter(service => 
+        String(service._parentindex) === String(location._index));
+      
+      linked.forEach(service => {
+        const provider = getOrganizationName(service);
+        uniqueProviders.add(provider);
+      });
     });
-  });
-  
-  const linkedCount = uniqueProviders.size;
-  
-  const row = document.createElement('tr');
-  row.setAttribute('data-index', location._index);
+    
+    const linkedCount = uniqueProviders.size;
+    
+    const row = document.createElement('tr');
+    row.setAttribute('data-index', location._index);
     
     // Make location name clickable if coordinates are available
     const locationName = location['Community Center'] || 'Location ' + location._index;
@@ -3124,4 +3111,3 @@ window.zoomToLocation = zoomToLocation;
 </script>
 </body>
 </html>
-
