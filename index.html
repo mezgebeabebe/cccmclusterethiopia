@@ -1628,11 +1628,61 @@ function addPinnedMarker(lat, lon, title = 'Pinned Location', providerName = '')
   return pinnedMarker;
 }
 
+// Add a pinned marker to the sector modal map
+function addSectorPinnedMarker(lat, lon, title = 'Pinned Location', providerName = '') {
+  if (!sectorModalMap) return null;
+  
+  // Create a custom pin icon
+  const pinIcon = L.divIcon({
+    className: 'pinned-marker',
+    html: `<div style="background-color: #ff5722; width: 24px; height: 32px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); position: relative; margin-top: -32px;">
+             <div style="position: absolute; top: 6px; left: 6px; width: 12px; height: 12px; background: white; border-radius: 50%;"></div>
+           </div>`,
+    iconSize: [24, 32],
+    iconAnchor: [12, 32]
+  });
+  
+  // Add the pinned marker
+  const pinnedMarker = L.marker([lat, lon], { icon: pinIcon }).addTo(sectorModalMap);
+  
+  // Create popup content
+  const popupContent = providerName 
+    ? `<div style="min-width: 200px;">
+         <h6 style="font-size: 0.9rem;"><strong><i class="fas fa-thumbtack me-1"></i>${providerName}</strong></h6>
+         <p class="mb-1" style="font-size: 0.8rem;">${title}</p>
+         <p class="mb-0" style="font-size: 0.8rem;">Coordinates: ${lat.toFixed(6)}, ${lon.toFixed(6)}</p>
+       </div>`
+    : `<div style="min-width: 200px;">
+         <h6 style="font-size: 0.9rem;"><strong><i class="fas fa-thumbtack me-1"></i>${title}</strong></h6>
+         <p class="mb-0" style="font-size: 0.8rem;">Coordinates: ${lat.toFixed(6)}, ${lon.toFixed(6)}</p>
+       </div>`;
+  
+  pinnedMarker.bindPopup(popupContent).openPopup();
+  
+  // Store the pinned marker
+  pinnedMarkers.push(pinnedMarker);
+  
+  // Zoom to the pinned location
+  sectorModalMap.setView([lat, lon], 14);
+  
+  return pinnedMarker;
+}
+
 // Clear all pinned markers from modal map
 function clearPinnedMarkers() {
   pinnedMarkers.forEach(marker => {
     if (modalMap && marker) {
       modalMap.removeLayer(marker);
+    }
+  });
+  pinnedMarkers = [];
+}
+
+// Clear all pinned markers from sector modal map
+function clearSectorPinnedMarkers() {
+  pinnedMarkers.forEach(marker => {
+    if (sectorModalMap && marker) {
+      sectorModalMap.removeLayer(marker);
     }
   });
   pinnedMarkers = [];
@@ -1794,6 +1844,9 @@ function initializeSectorModalMap(sectorName) {
     sectorModalMap = null;
   }
   
+  // Clear pinned markers
+  clearSectorPinnedMarkers();
+  
   // Ensure the map container is visible and has dimensions
   mapDiv.innerHTML = '';
   mapDiv.style.height = '400px';
@@ -1874,6 +1927,11 @@ function initializeSectorModalMap(sectorName) {
           <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Focal Person:</span> <span class="popup-value">${focalPerson}</span></p>
           <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Phone:</span> <span class="popup-value">${service['Phone Number'] || service['Phone'] || service['PHONE'] || 'Not specified'}</span></p>
           <p class="mb-0" style="font-size: 0.8rem;"><span class="popup-key">Coordinates:</span> <span class="popup-value">${coords.lat.toFixed(6)}, ${coords.lon.toFixed(6)}</span></p>
+          <div class="mt-1">
+            <button class="go-to-location-btn" data-lat="${coords.lat}" data-lon="${coords.lon}" data-provider="${provider}">
+              <i class="fas fa-map-marker-alt me-1"></i> Pin This Location
+            </button>
+          </div>
         </div>
       `);
       
@@ -2704,12 +2762,21 @@ function renderSectorServices(sectorName) {
               </div>
               ` : ''}
 
-
-              
               ${!isNaN(coords.lat) && !isNaN(coords.lon) ? `
               <div class="sector-service-detail">
                 <span class="detail-key">Coordinates:</span>
                 <span class="detail-value">${coords.lat.toFixed(6)}, ${coords.lon.toFixed(6)}</span>
+              </div>
+              ` : ''}
+              
+              ${!isNaN(coords.lat) && !isNaN(coords.lon) ? `
+              <div class="sector-service-detail">
+                <span class="detail-key">Map Action:</span>
+                <span class="detail-value">
+                  <button class="go-to-location-btn" data-lat="${coords.lat}" data-lon="${coords.lon}" data-provider="${provider}" title="Pin this location on the map">
+                    <i class="fas fa-map-marker-alt me-1"></i> Go to Location
+                  </button>
+                </span>
               </div>
               ` : ''}
             </div>
@@ -2974,10 +3041,22 @@ document.addEventListener('DOMContentLoaded', function() {
     const provider = button.getAttribute('data-provider') || 'Service Location';
     
     if (!isNaN(lat) && !isNaN(lon)) {
-      // Add a pinned marker to the modal map
-      if (modalMap) {
-        clearPinnedMarkers(); // Clear previous pins
-        addPinnedMarker(lat, lon, 'Service Location', provider);
+      // Check which map is currently active
+      const detailModal = document.getElementById('detailModal');
+      const sectorModal = document.getElementById('sectorDetailModal');
+      
+      if (detailModal.classList.contains('show')) {
+        // Add a pinned marker to the modal map
+        if (modalMap) {
+          clearPinnedMarkers(); // Clear previous pins
+          addPinnedMarker(lat, lon, 'Service Location', provider);
+        }
+      } else if (sectorModal.classList.contains('show')) {
+        // Add a pinned marker to the sector modal map
+        if (sectorModalMap) {
+          clearSectorPinnedMarkers(); // Clear previous pins
+          addSectorPinnedMarker(lat, lon, 'Service Location', provider);
+        }
       }
     }
   }
@@ -3032,9 +3111,3 @@ window.zoomToLocation = zoomToLocation;
 </script>
 </body>
 </html>
-
-
-
-
-
-
