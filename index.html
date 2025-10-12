@@ -776,6 +776,32 @@
       margin-bottom: 1.5rem;
       height: 100%;
     }
+
+    /* Enhanced chart labels */
+    .chart-label-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 15px;
+    }
+    
+    .chart-label-item {
+      display: flex;
+      align-items: center;
+      font-size: 0.8rem;
+      padding: 4px 8px;
+      background: #f8f9fa;
+      border-radius: 4px;
+      border-left: 4px solid;
+    }
+    
+    .chart-label-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
   </style>
 </head>
 <body>
@@ -1183,11 +1209,11 @@
           <!-- Woreda Chart Tab -->
           <div class="tab-pane fade show active" id="woreda-chart-pane" role="tabpanel" aria-labelledby="woreda-chart-tab" tabindex="0">
             <div class="chart-card">
-              <div class="chart-title">Community Centers per Woreda</div>
+              <div class="chart-title">Service Providers per Woreda</div>
               <div class="chart-container">
                 <canvas id="woredaChart"></canvas>
               </div>
-              <p class="text-muted small text-center">This chart shows the distribution of community centers across different woredas, highlighting areas with the highest concentration of service delivery points.</p>
+              <p class="text-muted small text-center">This chart shows the distribution of service providers across different woredas, highlighting areas with the highest concentration of humanitarian services.</p>
             </div>
           </div>
           
@@ -1200,6 +1226,8 @@
                   <div class="chart-container">
                     <canvas id="sectorProvidersChart"></canvas>
                   </div>
+                  <!-- Enhanced labels for pie chart -->
+                  <div class="chart-label-container" id="sectorProvidersLabels"></div>
                 </div>
               </div>
               <div class="col-md-6">
@@ -1208,6 +1236,8 @@
                   <div class="chart-container">
                     <canvas id="sectorLocationsChart"></canvas>
                   </div>
+                  <!-- Enhanced labels for pie chart -->
+                  <div class="chart-label-container" id="sectorLocationsLabels"></div>
                 </div>
               </div>
             </div>
@@ -1743,20 +1773,40 @@ function getAllSectors() {
   return Array.from(sectors);
 }
 
-// Get data for charts
+// Get data for charts - UPDATED to show service providers per woreda
 function getChartData() {
-  // Woreda data - Community Centers per Woreda
+  // Woreda data - Service Providers per Woreda (UPDATED)
   const woredaData = {};
+  
+  // Count service providers per woreda
   mainSheetData.forEach(location => {
     const woreda = location.Woreda || location.woreda || 'Unknown';
     if (!woredaData[woreda]) {
-      woredaData[woreda] = 0;
+      woredaData[woreda] = new Set();
     }
-    woredaData[woreda]++;
+    
+    // Count unique service providers for this location
+    Object.keys(serviceSheets).forEach(sheetName => {
+      const linked = serviceSheets[sheetName].filter(service => 
+        String(service._parentindex) === String(location._index));
+      
+      linked.forEach(service => {
+        const provider = getOrganizationName(service);
+        if (provider && provider !== 'Unknown Provider') {
+          woredaData[woreda].add(provider);
+        }
+      });
+    });
   });
   
-  // Sort woredas by count (descending) and take top 10
-  const sortedWoredas = Object.entries(woredaData)
+  // Convert sets to counts and sort
+  const woredaCounts = {};
+  Object.keys(woredaData).forEach(woreda => {
+    woredaCounts[woreda] = woredaData[woreda].size;
+  });
+  
+  // Sort woredas by service provider count (descending) and take top 10
+  const sortedWoredas = Object.entries(woredaCounts)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 10);
   
@@ -1802,6 +1852,23 @@ function getChartData() {
   };
 }
 
+// Create enhanced labels for pie charts
+function createPieChartLabels(chartId, labels, colors, data) {
+  const container = document.getElementById(chartId);
+  container.innerHTML = '';
+  
+  labels.forEach((label, index) => {
+    const labelItem = document.createElement('div');
+    labelItem.className = 'chart-label-item';
+    labelItem.innerHTML = `
+      <div class="chart-label-color" style="background-color: ${colors[index % colors.length]}"></div>
+      <strong>${label.toUpperCase()}:</strong> ${data[label]} ${chartId.includes('Providers') ? 'providers' : 'locations'}
+    `;
+    labelItem.style.borderLeftColor = colors[index % colors.length];
+    container.appendChild(labelItem);
+  });
+}
+
 // Render charts
 function renderCharts() {
   const chartData = getChartData();
@@ -1817,14 +1884,14 @@ function renderCharts() {
     sectorLocationsChart.destroy();
   }
   
-  // Woreda Chart (Bar Chart)
+  // Woreda Chart (Bar Chart) - UPDATED to show service providers
   const woredaCtx = document.getElementById('woredaChart').getContext('2d');
   woredaChart = new Chart(woredaCtx, {
     type: 'bar',
     data: {
       labels: chartData.woredaData.labels,
       datasets: [{
-        label: 'Number of Community Centers',
+        label: 'Number of Service Providers',
         data: chartData.woredaData.counts,
         backgroundColor: chartColors.primary,
         borderColor: chartColors.primary.map(color => color.replace('0.8', '1')),
@@ -1843,7 +1910,7 @@ function renderCharts() {
         tooltip: {
           callbacks: {
             label: function(context) {
-              return `Community Centers: ${context.raw}`;
+              return `Service Providers: ${context.raw}`;
             }
           }
         }
@@ -1853,7 +1920,7 @@ function renderCharts() {
           beginAtZero: true,
           title: {
             display: true,
-            text: 'Number of Community Centers'
+            text: 'Number of Service Providers'
           }
         },
         x: {
@@ -1866,10 +1933,10 @@ function renderCharts() {
     }
   });
   
-  // Sector Providers Chart (Doughnut)
+  // Sector Providers Chart (Pie with enhanced labels)
   const sectorProvidersCtx = document.getElementById('sectorProvidersChart').getContext('2d');
   sectorProvidersChart = new Chart(sectorProvidersCtx, {
-    type: 'doughnut',
+    type: 'pie',
     data: {
       labels: chartData.sectorData.sectors.map(s => s.toUpperCase()),
       datasets: [{
@@ -1885,12 +1952,14 @@ function renderCharts() {
       maintainAspectRatio: false,
       plugins: {
         legend: {
-          position: 'bottom'
+          display: false // We'll use custom labels instead
         },
         tooltip: {
           callbacks: {
             label: function(context) {
-              return `${context.label}: ${context.raw} providers`;
+              const label = context.label || '';
+              const value = context.raw || 0;
+              return `${label}: ${value} providers`;
             }
           }
         }
@@ -1898,7 +1967,15 @@ function renderCharts() {
     }
   });
   
-  // Sector Locations Chart (Pie)
+  // Create enhanced labels for sector providers chart
+  createPieChartLabels(
+    'sectorProvidersLabels',
+    chartData.sectorData.sectors,
+    chartColors.pastel,
+    chartData.sectorData.providers
+  );
+  
+  // Sector Locations Chart (Pie with enhanced labels)
   const sectorLocationsCtx = document.getElementById('sectorLocationsChart').getContext('2d');
   sectorLocationsChart = new Chart(sectorLocationsCtx, {
     type: 'pie',
@@ -1917,18 +1994,28 @@ function renderCharts() {
       maintainAspectRatio: false,
       plugins: {
         legend: {
-          position: 'bottom'
+          display: false // We'll use custom labels instead
         },
         tooltip: {
           callbacks: {
             label: function(context) {
-              return `${context.label}: ${context.raw} locations`;
+              const label = context.label || '';
+              const value = context.raw || 0;
+              return `${label}: ${value} locations`;
             }
           }
         }
       }
     }
   });
+  
+  // Create enhanced labels for sector locations chart
+  createPieChartLabels(
+    'sectorLocationsLabels',
+    chartData.sectorData.sectors,
+    chartColors.primary,
+    chartData.sectorData.locations
+  );
 }
 
 // Open charts modal
