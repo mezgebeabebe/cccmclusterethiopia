@@ -802,6 +802,18 @@
       border-radius: 50%;
       margin-right: 6px;
     }
+    
+    /* Add styles for the new chart containers */
+    .chart-row {
+      margin-bottom: 2rem;
+    }
+    
+    .chart-note {
+      font-size: 0.8rem;
+      color: #6c757d;
+      text-align: center;
+      margin-top: 0.5rem;
+    }
   </style>
 </head>
 <body>
@@ -1203,6 +1215,11 @@
               <i class="fas fa-layer-group me-1"></i>Sector Analysis
             </button>
           </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="providers-chart-tab" data-bs-toggle="tab" data-bs-target="#providers-chart-pane" type="button" role="tab" aria-controls="providers-chart-pane" aria-selected="false">
+              <i class="fas fa-hands-helping me-1"></i>Service Providers
+            </button>
+          </li>
         </ul>
         
         <div class="tab-content" id="chartTabContent">
@@ -1243,6 +1260,41 @@
             </div>
             <p class="text-muted small text-center">These charts show the distribution of service providers and locations covered across different sectors, helping identify sectoral coverage and gaps.</p>
           </div>
+          
+          <!-- Service Providers Chart Tab -->
+          <div class="tab-pane fade" id="providers-chart-pane" role="tabpanel" aria-labelledby="providers-chart-tab" tabindex="0">
+            <div class="row chart-row">
+              <div class="col-md-6">
+                <div class="chart-card">
+                  <div class="chart-title">Top 5 Service Providers by Sector</div>
+                  <div class="chart-container">
+                    <canvas id="topProvidersBySectorChart"></canvas>
+                  </div>
+                  <p class="chart-note">Showing the top 5 service providers with the most locations covered across all sectors</p>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="chart-card">
+                  <div class="chart-title">Top 5 Locations Covered by Sector</div>
+                  <div class="chart-container">
+                    <canvas id="topLocationsBySectorChart"></canvas>
+                  </div>
+                  <p class="chart-note">Showing the top 5 locations with the most service providers across all sectors</p>
+                </div>
+              </div>
+            </div>
+            <div class="row chart-row">
+              <div class="col-12">
+                <div class="chart-card">
+                  <div class="chart-title">Service Provider Distribution by Sector</div>
+                  <div class="chart-container">
+                    <canvas id="providerSectorDistributionChart"></canvas>
+                  </div>
+                  <p class="chart-note">Distribution of service providers across different sectors</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       <div class="modal-footer">
@@ -1281,6 +1333,9 @@ let currentView = 'location'; // Current view: 'location' or 'sector'
 let woredaChart = null;
 let sectorProvidersChart = null;
 let sectorLocationsChart = null;
+let topProvidersBySectorChart = null;
+let topLocationsBySectorChart = null;
+let providerSectorDistributionChart = null;
 
 // Column configuration - EASILY CUSTOMIZE VISIBLE COLUMNS HERE
 const columnConfig = [
@@ -1773,7 +1828,7 @@ function getAllSectors() {
   return Array.from(sectors);
 }
 
-// Get data for charts - UPDATED to show service providers per woreda
+// Get data for charts - UPDATED to include new provider and location data
 function getChartData() {
   // Woreda data - Service Providers per Woreda (UPDATED)
   const woredaData = {};
@@ -1839,6 +1894,84 @@ function getChartData() {
     sectorLocationsData[sector] = uniqueLocations.size;
   });
   
+  // NEW: Top Service Providers by Sector data
+  const topProvidersBySector = {};
+  const providerLocationCounts = {};
+  
+  // Count locations per provider across all sectors
+  Object.keys(serviceSheets).forEach(sheetName => {
+    serviceSheets[sheetName].forEach(service => {
+      const provider = getOrganizationName(service);
+      if (provider && provider !== 'Unknown Provider' && service._parentindex) {
+        if (!providerLocationCounts[provider]) {
+          providerLocationCounts[provider] = new Set();
+        }
+        providerLocationCounts[provider].add(service._parentindex);
+      }
+    });
+  });
+  
+  // Convert to counts and get top 5 providers
+  const providerCounts = {};
+  Object.keys(providerLocationCounts).forEach(provider => {
+    providerCounts[provider] = providerLocationCounts[provider].size;
+  });
+  
+  const topProviders = Object.entries(providerCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+  
+  // NEW: Top Locations by Sector data
+  const locationProviderCounts = {};
+  
+  // Count providers per location across all sectors
+  mainSheetData.forEach(location => {
+    const locationName = location['Community Center'] || `Location ${location._index}`;
+    if (!locationProviderCounts[locationName]) {
+      locationProviderCounts[locationName] = new Set();
+    }
+    
+    Object.keys(serviceSheets).forEach(sheetName => {
+      const linked = serviceSheets[sheetName].filter(service => 
+        String(service._parentindex) === String(location._index));
+      
+      linked.forEach(service => {
+        const provider = getOrganizationName(service);
+        if (provider && provider !== 'Unknown Provider') {
+          locationProviderCounts[locationName].add(provider);
+        }
+      });
+    });
+  });
+  
+  // Convert to counts and get top 5 locations
+  const locationCounts = {};
+  Object.keys(locationProviderCounts).forEach(location => {
+    locationCounts[location] = locationProviderCounts[location].size;
+  });
+  
+  const topLocations = Object.entries(locationCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+  
+  // NEW: Provider Distribution by Sector data
+  const providerSectorDistribution = {};
+  
+  // Count providers per sector
+  sectors.forEach(sector => {
+    const sectorServices = getSectorServices(sector);
+    let uniqueProviders = new Set();
+    
+    sectorServices.forEach(service => {
+      const provider = getOrganizationName(service);
+      if (provider && provider !== 'Unknown Provider') {
+        uniqueProviders.add(provider);
+      }
+    });
+    
+    providerSectorDistribution[sector] = uniqueProviders.size;
+  });
+  
   return {
     woredaData: {
       labels: sortedWoredas.map(item => item[0]),
@@ -1848,7 +1981,16 @@ function getChartData() {
       sectors: sectors,
       providers: sectorProvidersData,
       locations: sectorLocationsData
-    }
+    },
+    topProvidersData: {
+      providers: topProviders.map(item => item[0]),
+      counts: topProviders.map(item => item[1])
+    },
+    topLocationsData: {
+      locations: topLocations.map(item => item[0]),
+      counts: topLocations.map(item => item[1])
+    },
+    providerSectorDistribution: providerSectorDistribution
   };
 }
 
@@ -1882,6 +2024,15 @@ function renderCharts() {
   }
   if (sectorLocationsChart) {
     sectorLocationsChart.destroy();
+  }
+  if (topProvidersBySectorChart) {
+    topProvidersBySectorChart.destroy();
+  }
+  if (topLocationsBySectorChart) {
+    topLocationsBySectorChart.destroy();
+  }
+  if (providerSectorDistributionChart) {
+    providerSectorDistributionChart.destroy();
   }
   
   // Woreda Chart (Bar Chart) - UPDATED to show service providers
@@ -2016,6 +2167,153 @@ function renderCharts() {
     chartColors.primary,
     chartData.sectorData.locations
   );
+  
+  // NEW: Top 5 Service Providers by Sector Chart
+  const topProvidersCtx = document.getElementById('topProvidersBySectorChart').getContext('2d');
+  topProvidersBySectorChart = new Chart(topProvidersCtx, {
+    type: 'bar',
+    data: {
+      labels: chartData.topProvidersData.providers,
+      datasets: [{
+        label: 'Number of Locations Covered',
+        data: chartData.topProvidersData.counts,
+        backgroundColor: '#3498db',
+        borderColor: '#2980b9',
+        borderWidth: 1,
+        borderRadius: 5
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top'
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              return `Locations: ${context.raw}`;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Number of Locations'
+          }
+        },
+        x: {
+          title: {
+            display: true,
+            text: 'Service Provider'
+          }
+        }
+      }
+    }
+  });
+  
+  // NEW: Top 5 Locations Covered by Sector Chart
+  const topLocationsCtx = document.getElementById('topLocationsBySectorChart').getContext('2d');
+  topLocationsBySectorChart = new Chart(topLocationsCtx, {
+    type: 'bar',
+    data: {
+      labels: chartData.topLocationsData.locations,
+      datasets: [{
+        label: 'Number of Service Providers',
+        data: chartData.topLocationsData.counts,
+        backgroundColor: '#2ecc71',
+        borderColor: '#27ae60',
+        borderWidth: 1,
+        borderRadius: 5
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top'
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              return `Service Providers: ${context.raw}`;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Number of Service Providers'
+          }
+        },
+        x: {
+          title: {
+            display: true,
+            text: 'Location'
+          }
+        }
+      }
+    }
+  });
+  
+  // NEW: Provider Distribution by Sector Chart
+  const providerSectorCtx = document.getElementById('providerSectorDistributionChart').getContext('2d');
+  providerSectorDistributionChart = new Chart(providerSectorCtx, {
+    type: 'bar',
+    data: {
+      labels: Object.keys(chartData.providerSectorDistribution),
+      datasets: [{
+        label: 'Number of Service Providers',
+        data: Object.values(chartData.providerSectorDistribution),
+        backgroundColor: '#9b59b6',
+        borderColor: '#8e44ad',
+        borderWidth: 1,
+        borderRadius: 5
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top'
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              return `Providers: ${context.raw}`;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Number of Service Providers'
+          }
+        },
+        x: {
+          title: {
+            display: true,
+            text: 'Sector'
+          }
+        }
+      }
+    }
+  });
 }
 
 // Open charts modal
