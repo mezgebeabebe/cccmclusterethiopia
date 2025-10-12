@@ -1459,7 +1459,7 @@ function parseCoordinate(value) {
   }
   
   // Convert to string and clean
-  const strValue = String(value).trim();
+  const strValue = String(value).trim().replace(/\s+/g, '');
   
   // Handle empty strings
   if (strValue === '') {
@@ -1479,14 +1479,40 @@ function parseCoordinate(value) {
     return numWithComma;
   }
   
+  const cleaned = strValue.replace(/[^\d.,-]/g, '');
+  const cleanedNum = Number(cleaned.replace(',', '.'));
+  if (!isNaN(cleanedNum) && isFinite(cleanedNum)) {
+    return cleanedNum;
+  }
+  
   return NaN;
 }
 
 // Parse coordinates for service sheets
 function parseServiceCoordinates(service) {
-  const lat = parseCoordinate(service.latitude || service.Latitude || service.LATITUDE || service.lat);
-  const lon = parseCoordinate(service.longitude || service.Longitude || service.LONGITUDE || service.lon || service.long);
+  // Try multiple possible coordinate field names
+  const lat = parseCoordinate(
+    service.latitude || service.Latitude || service.LATITUDE || 
+    service.lat || service.Lat || service['GPS Latitude'] ||
+    service['Latitude (Y)'] || service.Y || service.y
+  );
+  
+  const lon = parseCoordinate(
+    service.longitude || service.Longitude || service.LONGITUDE || 
+    service.lon || service.Lon || service.long || service.Long ||
+    service['GPS Longitude'] || service['Longitude (X)'] || service.X || service.x
+  );
+  
   return { lat, lon };
+}
+
+// Debug function to check coordinate parsing
+function debugCoordinates(service, sheetName) {
+  const coords = parseServiceCoordinates(service);
+  console.log(`Sheet: ${sheetName}, Provider: ${getOrganizationName(service)}`);
+  console.log(`Raw lat: ${service.latitude || service.Latitude}, parsed: ${coords.lat}`);
+  console.log(`Raw lon: ${service.longitude || service.Longitude}, parsed: ${coords.lon}`);
+  console.log('---');
 }
 
 // Get all linked services for a location
@@ -2911,89 +2937,88 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Add event delegation for dynamically created elements
   document.addEventListener('click', function(e) {
-    // Handle view details buttons
-    if (e.target.closest('.view-details-btn')) {
-      const button = e.target.closest('.view-details-btn');
-      const index = button.getAttribute('data-index');
-      const location = mainSheetData.find(loc => String(loc._index) === String(index));
-      if (location) {
-        openDetailModal(location);
-      }
+  // Handle view details buttons in location view
+  if (e.target.closest('.view-details-btn')) {
+    const button = e.target.closest('.view-details-btn');
+    const index = button.getAttribute('data-index');
+    const location = mainSheetData.find(loc => String(loc._index) === String(index));
+    if (location) {
+      openDetailModal(location);
     }
+  }
+
+    // Handle sector detail view buttons
+  if (e.target.closest('.view-sector-details-btn')) {
+    const button = e.target.closest('.view-sector-details-btn');
+    const sector = button.getAttribute('data-sector');
+    if (sector) {
+      openSectorDetailModal(sector);
+    }
+  }
     
     // Handle clickable locations
-    if (e.target.closest('.clickable-location')) {
-      const element = e.target.closest('.clickable-location');
-      const index = element.getAttribute('data-index');
-      const location = mainSheetData.find(loc => String(loc._index) === String(index));
-      if (location) {
-        zoomToLocation(location);
-      }
+   if (e.target.closest('.clickable-location')) {
+    const element = e.target.closest('.clickable-location');
+    const index = element.getAttribute('data-index');
+    const location = mainSheetData.find(loc => String(loc._index) === String(index));
+    if (location) {
+      zoomToLocation(location);
     }
+  }
     
     // Handle "Go to Location" buttons in service cards and map popups
-    if (e.target.closest('.go-to-location-btn')) {
-      const button = e.target.closest('.go-to-location-btn');
-      const lat = parseFloat(button.getAttribute('data-lat'));
-      const lon = parseFloat(button.getAttribute('data-lon'));
-      const provider = button.getAttribute('data-provider') || 'Service Location';
-      
-      if (!isNaN(lat) && !isNaN(lon)) {
-        // Add a pinned marker to the modal map
-        if (modalMap) {
-          clearPinnedMarkers(); // Clear previous pins
-          addPinnedMarker(lat, lon, 'Service Location', provider);
-        }
-        
-        console.log(`Pinned service location for ${provider} at ${lat}, ${lon} on modal map`);
+   if (e.target.closest('.go-to-location-btn')) {
+    const button = e.target.closest('.go-to-location-btn');
+    const lat = parseFloat(button.getAttribute('data-lat'));
+    const lon = parseFloat(button.getAttribute('data-lon'));
+    const provider = button.getAttribute('data-provider') || 'Service Location';
+    
+    if (!isNaN(lat) && !isNaN(lon)) {
+      // Add a pinned marker to the modal map
+      if (modalMap) {
+        clearPinnedMarkers(); // Clear previous pins
+        addPinnedMarker(lat, lon, 'Service Location', provider);
       }
     }
+  }
+});
+
+// Add touch event delegation for mobile
+document.addEventListener('touchstart', function(e) {
+  // Handle view details buttons for touch
+  if (e.target.closest('.view-details-btn')) {
+    const button = e.target.closest('.view-details-btn');
+    const index = button.getAttribute('data-index');
+    const location = mainSheetData.find(loc => String(loc._index) === String(index));
+    if (location) {
+      e.preventDefault();
+      openDetailModal(location);
+    }
+  }
+
+  // Handle clickable locations for touch
+  if (e.target.closest('.clickable-location')) {
+    const element = e.target.closest('.clickable-location');
+    const index = element.getAttribute('data-index');
+    const location = mainSheetData.find(loc => String(loc._index) === String(index));
+    if (location) {
+      e.preventDefault();
+      zoomToLocation(location);
+    }
+  }
     
     // Handle sector detail view buttons
-    if (e.target.closest('.view-sector-details-btn')) {
-      const button = e.target.closest('.view-sector-details-btn');
-      const sector = button.getAttribute('data-sector');
-      if (sector) {
-        openSectorDetailModal(sector);
-      }
+      if (e.target.closest('.view-sector-details-btn')) {
+    const button = e.target.closest('.view-sector-details-btn');
+    const sector = button.getAttribute('data-sector');
+    if (sector) {
+      e.preventDefault();
+      openSectorDetailModal(sector);
     }
-  });
+  }
+}, { passive: false });
   
-  // Add touch event delegation for mobile
-  document.addEventListener('touchstart', function(e) {
-    // Handle view details buttons for touch
-    if (e.target.closest('.view-details-btn')) {
-      const button = e.target.closest('.view-details-btn');
-      const index = button.getAttribute('data-index');
-      const location = mainSheetData.find(loc => String(loc._index) === String(index));
-      if (location) {
-        e.preventDefault();
-        openDetailModal(location);
-      }
-    }
     
-    // Handle clickable locations for touch
-    if (e.target.closest('.clickable-location')) {
-      const element = e.target.closest('.clickable-location');
-      const index = element.getAttribute('data-index');
-      const location = mainSheetData.find(loc => String(loc._index) === String(index));
-      if (location) {
-        e.preventDefault();
-        zoomToLocation(location);
-      }
-    }
-    
-    // Handle sector detail view buttons for touch
-    if (e.target.closest('.view-sector-details-btn')) {
-      const button = e.target.closest('.view-sector-details-btn');
-      const sector = button.getAttribute('data-sector');
-      if (sector) {
-        e.preventDefault();
-        openSectorDetailModal(sector);
-      }
-    }
-  }, { passive: false });
-  
   // Auto-load the file when the page opens
   autoLoadExcelFile();
 });
@@ -3007,6 +3032,7 @@ window.zoomToLocation = zoomToLocation;
 </script>
 </body>
 </html>
+
 
 
 
