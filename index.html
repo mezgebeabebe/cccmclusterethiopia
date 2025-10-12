@@ -13,6 +13,8 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
     :root {
@@ -710,9 +712,78 @@
     .spinner-border {
       animation-duration: 0.75s;
     }
+
+    /* Floating Chart Button */
+    .floating-chart-btn {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #3498db, #1abc9c);
+      color: white;
+      border: none;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .floating-chart-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    }
+    
+    .floating-chart-btn:active {
+      transform: scale(0.95);
+    }
+    
+    /* Chart Modal */
+    .chart-modal .modal-dialog {
+      max-width: 1000px;
+    }
+    
+    .chart-container {
+      height: 300px;
+      margin-bottom: 2rem;
+    }
+    
+    .chart-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--primary-color);
+      margin-bottom: 1rem;
+      text-align: center;
+      border-bottom: 2px solid var(--accent-color);
+      padding-bottom: 0.5rem;
+    }
+    
+    .chart-tabs .nav-link {
+      font-size: 0.85rem;
+      padding: 0.5rem 1rem;
+    }
+    
+    .chart-card {
+      background: white;
+      border-radius: 8px;
+      padding: 1.5rem;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+      margin-bottom: 1.5rem;
+      height: 100%;
+    }
   </style>
 </head>
 <body>
+
+<!-- Floating Chart Button -->
+<button class="floating-chart-btn" id="chartButton" title="View Analytics Charts">
+  <i class="fas fa-chart-pie"></i>
+</button>
 
 <div class="dashboard-header">
   <div class="container">
@@ -720,13 +791,14 @@
       <div class="d-flex align-items-center">
         <img src="cccmlogo.png" alt="CCCM Cluster Logo" style="height: 70px; margin-right: 15px;" class="d-none d-md-block">
         <div>
-          <h1 class="mb-1" style="font-size: 1.8rem; font-weight: bold; color: rgb(236, 107, 77);"><i class="fas fa-map-marked-alt me-2"></i>Catchment Area Service Mapping</h1>
+          <!-- Removed the map-marked-alt icon from the title -->
+          <h1 class="mb-1" style="font-size: 1.8rem; font-weight: bold; color: rgb(236, 107, 77);">Catchment Area Service Mapping</h1>
           <p class="mb-0" style="font-size: 0.85rem;">Interactive dashboard for visualizing and analyzing service areas across all sectors</p>
         </div>
       </div>
       <div class="text-end d-none d-md-block">
-  <div class="small-muted" id="fileStatus" style="color: white;">Updated as of September 2025</div>
-</div>
+        <div class="small-muted" id="fileStatus" style="color: white;">Updated as of September 2025</div>
+      </div>
     </div>
   </div>
 </div>
@@ -766,7 +838,7 @@
     <div class="col-6 col-md-3 mb-2">
       <div class="stats-card">
         <div style="font-size: 2rem; color: var(--accent-color); margin-bottom: 0.5rem;">
-  <!-- Icon removed -->
+          <!-- Icon removed -->
         </div>
         <div class="stats-label" style="font-size: 0.9rem; font-weight: 600;">Community First Approach</div>
       </div>
@@ -805,10 +877,9 @@
     <div class="col-lg-4 mb-3">
       <div class="card h-100">
         <div class="card-header d-flex align-items-center">
-         <!-- <img src="cccmlogo.png" alt="CCCM Logo" style="height: 25px; margin-right: 10px;"> -->
-        <div>
-          About CCCM Cluster
-        </div>
+          <div>
+            About CCCM Cluster
+          </div>
         </div>
         <div class="card-body">
           <div class="mb-3">
@@ -1084,6 +1155,73 @@
   </div>
 </div>
 
+<!-- Charts Modal -->
+<div class="modal fade chart-modal" id="chartsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" style="font-size: 1.1rem;"><i class="fas fa-chart-pie me-2"></i>Analytics Dashboard</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      
+      <div class="modal-body">
+        <!-- Chart Tabs -->
+        <ul class="nav nav-tabs chart-tabs mb-4" id="chartTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="woreda-chart-tab" data-bs-toggle="tab" data-bs-target="#woreda-chart-pane" type="button" role="tab" aria-controls="woreda-chart-pane" aria-selected="true">
+              <i class="fas fa-map-marker-alt me-1"></i>Woreda Distribution
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="sector-chart-tab" data-bs-toggle="tab" data-bs-target="#sector-chart-pane" type="button" role="tab" aria-controls="sector-chart-pane" aria-selected="false">
+              <i class="fas fa-layer-group me-1"></i>Sector Analysis
+            </button>
+          </li>
+        </ul>
+        
+        <div class="tab-content" id="chartTabContent">
+          <!-- Woreda Chart Tab -->
+          <div class="tab-pane fade show active" id="woreda-chart-pane" role="tabpanel" aria-labelledby="woreda-chart-tab" tabindex="0">
+            <div class="chart-card">
+              <div class="chart-title">Community Centers per Woreda</div>
+              <div class="chart-container">
+                <canvas id="woredaChart"></canvas>
+              </div>
+              <p class="text-muted small text-center">This chart shows the distribution of community centers across different woredas, highlighting areas with the highest concentration of service delivery points.</p>
+            </div>
+          </div>
+          
+          <!-- Sector Chart Tab -->
+          <div class="tab-pane fade" id="sector-chart-pane" role="tabpanel" aria-labelledby="sector-chart-tab" tabindex="0">
+            <div class="row">
+              <div class="col-md-6">
+                <div class="chart-card">
+                  <div class="chart-title">Service Providers by Sector</div>
+                  <div class="chart-container">
+                    <canvas id="sectorProvidersChart"></canvas>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="chart-card">
+                  <div class="chart-title">Locations Covered by Sector</div>
+                  <div class="chart-container">
+                    <canvas id="sectorLocationsChart"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <p class="text-muted small text-center">These charts show the distribution of service providers and locations covered across different sectors, helping identify sectoral coverage and gaps.</p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- JS libs -->
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
@@ -1108,6 +1246,11 @@ let locationMarkers = {}; // Store markers by location index for quick access
 let pinnedMarkers = []; // Store pinned markers for the modal map
 let currentModalLocation = null; // Store current modal location for refreshing
 let currentView = 'location'; // Current view: 'location' or 'sector'
+
+// Chart instances
+let woredaChart = null;
+let sectorProvidersChart = null;
+let sectorLocationsChart = null;
 
 // Column configuration - EASILY CUSTOMIZE VISIBLE COLUMNS HERE
 const columnConfig = [
@@ -1234,6 +1377,12 @@ const serviceColors = {
   'nfis_ca': '#34495e',
   'nfis_cc': '#2c3e50',
   'default': '#7f8c8d'
+};
+
+// Chart color schemes
+const chartColors = {
+  primary: ['#3498db', '#2ecc71', '#e74c3c', '#f39c12', '#9b59b6', '#1abc9c', '#34495e', '#d35400', '#c0392b', '#16a085'],
+  pastel: ['#6ab0de', '#82d196', '#f28b7a', '#f7b955', '#b291cc', '#5cd1b9', '#5d6d7e', '#e67e22', '#a84333', '#2ecc71']
 };
 
 // Show loading overlay
@@ -1541,15 +1690,6 @@ function parseServiceCoordinates(service) {
   };
 }
 
-// Debug function to check coordinate parsing
-function debugCoordinates(service, sheetName) {
-  const coords = parseServiceCoordinates(service);
-  console.log(`Sheet: ${sheetName}, Provider: ${getOrganizationName(service)}`);
-  console.log(`Raw lat: ${service.latitude || service.Latitude}, parsed: ${coords.lat}`);
-  console.log(`Raw lon: ${service.longitude || service.Longitude}, parsed: ${coords.lon}`);
-  console.log('---');
-}
-
 // Get all linked services for a location
 function getLinkedServices(location) {
   const linkedServices = [];
@@ -1601,6 +1741,201 @@ function getAllSectors() {
   });
   
   return Array.from(sectors);
+}
+
+// Get data for charts
+function getChartData() {
+  // Woreda data - Community Centers per Woreda
+  const woredaData = {};
+  mainSheetData.forEach(location => {
+    const woreda = location.Woreda || location.woreda || 'Unknown';
+    if (!woredaData[woreda]) {
+      woredaData[woreda] = 0;
+    }
+    woredaData[woreda]++;
+  });
+  
+  // Sort woredas by count (descending) and take top 10
+  const sortedWoredas = Object.entries(woredaData)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10);
+  
+  // Sector data
+  const sectorProvidersData = {};
+  const sectorLocationsData = {};
+  
+  const sectors = getAllSectors();
+  sectors.forEach(sector => {
+    const sectorServices = getSectorServices(sector);
+    
+    // Count unique providers
+    let uniqueProviders = new Set();
+    sectorServices.forEach(service => {
+      const provider = getOrganizationName(service);
+      if (provider && provider !== 'Unknown Provider') {
+        uniqueProviders.add(provider);
+      }
+    });
+    
+    // Count unique locations
+    let uniqueLocations = new Set();
+    sectorServices.forEach(service => {
+      if (service._parentindex) {
+        uniqueLocations.add(service._parentindex);
+      }
+    });
+    
+    sectorProvidersData[sector] = uniqueProviders.size;
+    sectorLocationsData[sector] = uniqueLocations.size;
+  });
+  
+  return {
+    woredaData: {
+      labels: sortedWoredas.map(item => item[0]),
+      counts: sortedWoredas.map(item => item[1])
+    },
+    sectorData: {
+      sectors: sectors,
+      providers: sectorProvidersData,
+      locations: sectorLocationsData
+    }
+  };
+}
+
+// Render charts
+function renderCharts() {
+  const chartData = getChartData();
+  
+  // Destroy existing charts if they exist
+  if (woredaChart) {
+    woredaChart.destroy();
+  }
+  if (sectorProvidersChart) {
+    sectorProvidersChart.destroy();
+  }
+  if (sectorLocationsChart) {
+    sectorLocationsChart.destroy();
+  }
+  
+  // Woreda Chart (Bar Chart)
+  const woredaCtx = document.getElementById('woredaChart').getContext('2d');
+  woredaChart = new Chart(woredaCtx, {
+    type: 'bar',
+    data: {
+      labels: chartData.woredaData.labels,
+      datasets: [{
+        label: 'Number of Community Centers',
+        data: chartData.woredaData.counts,
+        backgroundColor: chartColors.primary,
+        borderColor: chartColors.primary.map(color => color.replace('0.8', '1')),
+        borderWidth: 1,
+        borderRadius: 5
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top'
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              return `Community Centers: ${context.raw}`;
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Number of Community Centers'
+          }
+        },
+        x: {
+          title: {
+            display: true,
+            text: 'Woreda'
+          }
+        }
+      }
+    }
+  });
+  
+  // Sector Providers Chart (Doughnut)
+  const sectorProvidersCtx = document.getElementById('sectorProvidersChart').getContext('2d');
+  sectorProvidersChart = new Chart(sectorProvidersCtx, {
+    type: 'doughnut',
+    data: {
+      labels: chartData.sectorData.sectors.map(s => s.toUpperCase()),
+      datasets: [{
+        label: 'Service Providers',
+        data: chartData.sectorData.sectors.map(s => chartData.sectorData.providers[s] || 0),
+        backgroundColor: chartColors.pastel,
+        borderColor: '#fff',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom'
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              return `${context.label}: ${context.raw} providers`;
+            }
+          }
+        }
+      }
+    }
+  });
+  
+  // Sector Locations Chart (Pie)
+  const sectorLocationsCtx = document.getElementById('sectorLocationsChart').getContext('2d');
+  sectorLocationsChart = new Chart(sectorLocationsCtx, {
+    type: 'pie',
+    data: {
+      labels: chartData.sectorData.sectors.map(s => s.toUpperCase()),
+      datasets: [{
+        label: 'Locations Covered',
+        data: chartData.sectorData.sectors.map(s => chartData.sectorData.locations[s] || 0),
+        backgroundColor: chartColors.primary,
+        borderColor: '#fff',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom'
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              return `${context.label}: ${context.raw} locations`;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// Open charts modal
+function openChartsModal() {
+  renderCharts();
+  const modal = new bootstrap.Modal(document.getElementById('chartsModal'));
+  modal.show();
 }
 
 // Zoom to a specific location on the main map
@@ -3061,6 +3396,13 @@ document.addEventListener('DOMContentLoaded', function() {
     switchView('sector');
   }, { passive: false });
   
+  // Chart button
+  document.getElementById('chartButton').addEventListener('click', openChartsModal);
+  document.getElementById('chartButton').addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    openChartsModal();
+  }, { passive: false });
+  
   // Add event delegation for dynamically created elements
   document.addEventListener('click', function(e) {
     // Handle view details buttons in location view
@@ -3134,6 +3476,7 @@ window.openDetailModal = openDetailModal;
 window.openSectorDetailModal = openSectorDetailModal;
 window.initializeModalMap = initializeModalMap;
 window.zoomToLocation = zoomToLocation;
+window.openChartsModal = openChartsModal;
 </script>
 </body>
 </html>
