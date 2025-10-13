@@ -1726,16 +1726,20 @@ function updateTableWithFilteredData(filteredData) {
         : locationName;
       
       // Add row directly to DataTable without data parameter mapping
-      dataTable.row.add([
-        location.Region || 'N/A',
-        location.Zone || 'N/A',
-        location.Woreda || 'N/A',
-        locationDisplay,
-        location['CCCM Agency'] || 'N/A',
-        linkedCount > 0 ? 
-          `<span class="badge bg-primary rounded-pill" style="font-size: 0.7rem;">${linkedCount} service provider${linkedCount !== 1 ? 's' : ''}</span>` : 
-          `<span class="badge bg-secondary rounded-pill" style="font-size: 0.7rem;">No service providers</span>`
-      ]);
+      // Create row node and add to DataTable
+const rowNode = dataTable.row.add([
+  location.Region || 'N/A',
+  location.Zone || 'N/A',
+  location.Woreda || 'N/A',
+  locationDisplay,
+  location['CCCM Agency'] || 'N/A',
+  linkedCount > 0 ? 
+    `<span class="badge bg-primary rounded-pill" style="font-size: 0.7rem;">${linkedCount} service provider${linkedCount !== 1 ? 's' : ''}</span>` : 
+    `<span class="badge bg-secondary rounded-pill" style="font-size: 0.7rem;">No service providers</span>`
+]).node();
+
+// Set data-index attribute on the row
+$(rowNode).attr('data-index', location._index);
     });
     
     dataTable.draw();
@@ -3120,7 +3124,7 @@ function setupMobileTouchEvents() {
   // Check if the click originated from a table row in the main table
   const row = e.target.closest('#mainTable tbody tr');
   if (row) {
-    const index = row.getAttribute('data-index');
+    const index = $(row).attr('data-index'); // Use jQuery to get the attribute
     if (index) {
       const location = mainSheetData.find(loc => String(loc._index) === String(index));
       if (location) {
@@ -3135,7 +3139,7 @@ document.addEventListener('touchstart', function(e) {
   const row = e.target.closest('#mainTable tbody tr');
   if (row) {
     e.preventDefault();
-    const index = row.getAttribute('data-index');
+    const index = $(row).attr('data-index'); // Use jQuery to get the attribute
     if (index) {
       const location = mainSheetData.find(loc => String(loc._index) === String(index));
       if (location) {
@@ -4098,5 +4102,6 @@ window.openChartsModal = openChartsModal;
 </script>
 </body>
 </html>
+
 
 
