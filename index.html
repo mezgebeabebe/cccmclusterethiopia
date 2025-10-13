@@ -713,11 +713,31 @@
       animation-duration: 0.75s;
     }
 
-    /* Floating Chart Button */
-    .floating-chart-btn {
+    /* Floating Chart Button with Title */
+    .floating-chart-container {
       position: fixed;
       bottom: 30px;
       right: 30px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+    
+    .floating-chart-title {
+      background: rgba(27, 101, 124, 0.9);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      max-width: 200px;
+      text-align: center;
+    }
+    
+    .floating-chart-btn {
       width: 60px;
       height: 60px;
       border-radius: 50%;
@@ -725,7 +745,6 @@
       color: white;
       border: none;
       box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-      z-index: 1000;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -815,22 +834,26 @@
       margin-top: 0.5rem;
     }
 
-.map-label {
+    /* Add this new style for map labels */
+    .map-label {
       font-weight: bold;
       font-size: 12px;
       text-shadow: 1px 1px 2px white, -1px -1px 2px white, 1px -1px 2px white, -1px 1px 2px white;
       pointer-events: none;
     }
-
-    
   </style>
 </head>
 <body>
 
-<!-- Floating Chart Button -->
-<button class="floating-chart-btn" id="chartButton" title="View Analytics Dashboard">
-  <i class="fas fa-chart-pie"></i>
-</button>
+<!-- Floating Chart Button with Title -->
+<div class="floating-chart-container">
+  <div class="floating-chart-title">
+    <i class="fas fa-chart-pie me-1"></i>Analytics Dashboard
+  </div>
+  <button class="floating-chart-btn" id="chartButton" title="View Analytics Dashboard">
+    <i class="fas fa-chart-pie"></i>
+  </button>
+</div>
 
 <div class="dashboard-header">
   <div class="container">
@@ -1430,10 +1453,10 @@ const serviceColors = {
   'default': '#7f8c8d'
 };
 
-// Chart color schemes
+// Updated chart color scheme with your specified colors
 const chartColors = {
-  primary: ['#3498db', '#2ecc71', '#e74c3c', '#f39c12', '#9b59b6', '#1abc9c', '#34495e', '#d35400', '#c0392b', '#16a085'],
-  pastel: ['#6ab0de', '#82d196', '#f28b7a', '#f7b955', '#b291cc', '#5cd1b9', '#5d6d7e', '#e67e22', '#a84333', '#2ecc71']
+  primary: ['#1b657c', '#1b657c', '#1b657c', '#1b657c', '#1b657c'], // Using your specified color for all bars
+  accent: '#1b657c' // Your specified color: rgb(27, 101, 124)
 };
 
 // Show loading overlay
@@ -1856,7 +1879,7 @@ function getChartData() {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5);
   
-  // NEW: Provider Distribution by Sector data
+  // NEW: Provider Distribution by Sector data - SORTED from highest to lowest
   const providerSectorDistribution = {};
   const sectors = getAllSectors();
   
@@ -1875,6 +1898,15 @@ function getChartData() {
     providerSectorDistribution[sector] = uniqueProviders.size;
   });
   
+  // Sort sectors by provider count (highest to lowest)
+  const sortedSectors = Object.entries(providerSectorDistribution)
+    .sort((a, b) => b[1] - a[1]);
+  
+  const sortedProviderSectorDistribution = {};
+  sortedSectors.forEach(([sector, count]) => {
+    sortedProviderSectorDistribution[sector] = count;
+  });
+  
   return {
     topProvidersData: {
       providers: topProviders.map(item => item[0]),
@@ -1884,7 +1916,7 @@ function getChartData() {
       locations: topLocations.map(item => item[0]),
       counts: topLocations.map(item => item[1])
     },
-    providerSectorDistribution: providerSectorDistribution
+    providerSectorDistribution: sortedProviderSectorDistribution
   };
 }
 
@@ -1912,8 +1944,8 @@ function renderCharts() {
       datasets: [{
         label: 'Number of Locations Covered',
         data: chartData.topProvidersData.counts,
-        backgroundColor: '#3498db',
-        borderColor: '#2980b9',
+        backgroundColor: chartColors.primary,
+        borderColor: chartColors.accent,
         borderWidth: 1,
         borderRadius: 5
       }]
@@ -1923,8 +1955,7 @@ function renderCharts() {
       maintainAspectRatio: false,
       plugins: {
         legend: {
-          display: true,
-          position: 'top'
+          display: false // Remove legend as requested
         },
         tooltip: {
           callbacks: {
@@ -1961,8 +1992,8 @@ function renderCharts() {
       datasets: [{
         label: 'Number of Service Providers',
         data: chartData.topLocationsData.counts,
-        backgroundColor: '#2ecc71',
-        borderColor: '#27ae60',
+        backgroundColor: chartColors.primary,
+        borderColor: chartColors.accent,
         borderWidth: 1,
         borderRadius: 5
       }]
@@ -1972,8 +2003,7 @@ function renderCharts() {
       maintainAspectRatio: false,
       plugins: {
         legend: {
-          display: true,
-          position: 'top'
+          display: false // Remove legend as requested
         },
         tooltip: {
           callbacks: {
@@ -2001,7 +2031,7 @@ function renderCharts() {
     }
   });
   
-  // NEW: Provider Distribution by Sector Chart
+  // NEW: Provider Distribution by Sector Chart - SORTED from highest to lowest
   const providerSectorCtx = document.getElementById('providerSectorDistributionChart').getContext('2d');
   providerSectorDistributionChart = new Chart(providerSectorCtx, {
     type: 'bar',
@@ -2010,8 +2040,8 @@ function renderCharts() {
       datasets: [{
         label: 'Number of Service Providers',
         data: Object.values(chartData.providerSectorDistribution),
-        backgroundColor: '#9b59b6',
-        borderColor: '#8e44ad',
+        backgroundColor: chartColors.primary,
+        borderColor: chartColors.accent,
         borderWidth: 1,
         borderRadius: 5
       }]
@@ -2021,8 +2051,7 @@ function renderCharts() {
       maintainAspectRatio: false,
       plugins: {
         legend: {
-          display: true,
-          position: 'top'
+          display: false // Remove legend as requested
         },
         tooltip: {
           callbacks: {
