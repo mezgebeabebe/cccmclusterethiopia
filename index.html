@@ -987,6 +987,128 @@
     margin: 10px;
   }
 }
+
+    /* Enhanced Footer Styles */
+.footer-section {
+  background: linear-gradient(135deg, var(--primary-color), var(--dark-color));
+  color: white;
+  padding: 2rem 0 1rem;
+  margin-top: 2rem;
+  border-radius: 10px 10px 0 0;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
+}
+
+.footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.footer-label {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--light-color);
+  margin-right: 1rem;
+  white-space: nowrap;
+}
+
+.footer-logos {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+
+.footer-logo-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease;
+}
+
+.footer-logo {
+  height: 40px;
+  max-width: 120px;
+  object-fit: contain;
+  filter: brightness(0) invert(1); /* Makes logos white */
+  opacity: 0.9;
+  transition: all 0.3s ease;
+}
+
+.footer-logo:hover {
+  opacity: 1;
+  transform: translateY(-2px);
+  filter: brightness(0) invert(1) drop-shadow(0 2px 4px rgba(255,255,255,0.3));
+}
+
+.footer-info {
+  text-align: center;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255,255,255,0.2);
+  margin-top: 1rem;
+}
+
+.footer-info p {
+  margin-bottom: 0.25rem;
+}
+
+/* Mobile responsiveness for footer */
+@media (max-width: 768px) {
+  .footer-section {
+    padding: 1.5rem 0 1rem;
+  }
+  
+  .footer-row {
+    flex-direction: column;
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+  
+  .footer-label {
+    margin-right: 0;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+  }
+  
+  .footer-logos {
+    gap: 1rem;
+  }
+  
+  .footer-logo {
+    height: 35px;
+    max-width: 100px;
+  }
+  
+  .footer-info {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .footer-logos {
+    gap: 0.75rem;
+  }
+  
+  .footer-logo {
+    height: 30px;
+    max-width: 80px;
+  }
+  
+  .footer-label {
+    font-size: 0.8rem;
+  }
+}
+
+/* Ensure footer doesn't overlap with floating chart button */
+@media (max-width: 768px) {
+  .floating-chart-container {
+    bottom: 100px; /* Adjust if footer is too tall on mobile */
+  }
+}
   </style>
 </head>
 <body>
@@ -1280,9 +1402,51 @@
     </div>
   </div>
 
-  <div class="footer text-center">
-    <p class="mb-0">CCCM Cluster Ethiopia</p>
+  <!-- Enhanced Footer with Donors and Partners -->
+<div class="footer-section">
+  <div class="container">
+    <!-- Donors Section -->
+    <div class="footer-row">
+      <div class="footer-label">Supported by:</div>
+      <div class="footer-logos">
+        <div class="footer-logo-item">
+          <img src="donor1.png" alt="Donor 1" class="footer-logo">
+        </div>
+        <div class="footer-logo-item">
+          <img src="donor2.png" alt="Donor 2" class="footer-logo">
+        </div>
+        <div class="footer-logo-item">
+          <img src="donor3.png" alt="Donor 3" class="footer-logo">
+        </div>
+      </div>
+    </div>
+    
+    <!-- Partners Section -->
+    <div class="footer-row">
+      <div class="footer-label">In partnership with:</div>
+      <div class="footer-logos">
+        <div class="footer-logo-item">
+          <img src="partner1.png" alt="Partner 1" class="footer-logo">
+        </div>
+        <div class="footer-logo-item">
+          <img src="partner2.png" alt="Partner 2" class="footer-logo">
+        </div>
+        <div class="footer-logo-item">
+          <img src="partner3.png" alt="Partner 3" class="footer-logo">
+        </div>
+        <div class="footer-logo-item">
+          <img src="partner4.png" alt="Partner 4" class="footer-logo">
+        </div>
+      </div>
+    </div>
+    
+    <!-- CCCM Cluster Info -->
+    <div class="footer-info">
+      <p class="mb-0">CCCM Cluster Ethiopia • Catchment Area Service Mapping Dashboard</p>
+      <p class="mb-0 small-muted">Updated as of September 2025</p>
+    </div>
   </div>
+</div>
 </div>
 
 <!-- Location Detail Modal -->
@@ -4328,6 +4492,7 @@ window.openChartsModal = openChartsModal;
 </script>
 </body>
 </html>
+
 
 
 
