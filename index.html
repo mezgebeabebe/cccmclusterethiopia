@@ -17,7 +17,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
-    :root {
+     :root {
       --primary-color: #2c3e50;
       --secondary-color: #3498db;
       --accent-color: #1abc9c;
@@ -25,7 +25,7 @@
       --dark-color: #34495e;
     }
     
-    body { 
+   body { 
       background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
       min-height: 100vh;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -834,6 +834,13 @@
       margin-top: 0.5rem;
     }
 
+    .chart-note {
+      font-size: 0.8rem;
+      color: #6c757d;
+      text-align: center;
+      margin-top: 0.5rem;
+    }
+
     /* Add this new style for map labels */
      .map-label {
       font-weight: bold;
@@ -910,7 +917,7 @@
       font-size: 0.85rem;
       margin-bottom: 0.25rem;
     }
-  </style>
+ </style>
 </head>
 <body>
 
@@ -1630,7 +1637,926 @@ function showAutoLoadNotification(message) {
   }, 5000);
 }
 
-// Initialize filter dropdowns
+// Initialize main map
+function initializeMainMap() {
+  // Default center coordinates (Ethiopia)
+  mainMap = L.map('mainMap').setView([9.145, 40.4897], 6);
+  
+  // Add tile layer
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(mainMap);
+  
+  // Initialize markers layer
+  markersLayer = L.layerGroup().addTo(mainMap);
+  
+  // Map control buttons
+  document.getElementById('zoomIn').addEventListener('click', () => mainMap.zoomIn());
+  document.getElementById('zoomOut').addEventListener('click', () => mainMap.zoomOut());
+  document.getElementById('resetView').addEventListener('click', () => mainMap.setView([9.145, 40.4897], 6));
+}
+
+// Initialize modal map
+function initializeModalMap() {
+  if (modalMap) {
+    modalMap.remove();
+  }
+  
+  modalMap = L.map('modalMap').setView([9.145, 40.4897], 6);
+  
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(modalMap);
+  
+  return modalMap;
+}
+
+// Initialize sector modal map
+function initializeSectorModalMap() {
+  if (sectorModalMap) {
+    sectorModalMap.remove();
+  }
+  
+  sectorModalMap = L.map('sectorModalMap').setView([9.145, 40.4897], 6);
+  
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(sectorModalMap);
+  
+  return sectorModalMap;
+}
+
+// Initialize column controls
+function initializeColumnControls() {
+  const container = document.getElementById('columnCheckboxes');
+  container.innerHTML = '';
+  
+  columnConfig.forEach((column, index) => {
+    const checkbox = document.createElement('span');
+    checkbox.className = 'column-checkbox';
+    checkbox.innerHTML = `
+      <input type="checkbox" id="col-${index}" ${column.visible ? 'checked' : ''}>
+      <label for="col-${index}">${column.title}</label>
+    `;
+    container.appendChild(checkbox);
+    
+    // Add event listener
+    checkbox.querySelector('input').addEventListener('change', function() {
+      column.visible = this.checked;
+      if (dataTable) {
+        dataTable.column(index).visible(this.checked);
+      }
+    });
+  });
+}
+
+// Initialize sector column controls
+function initializeSectorColumnControls() {
+  const container = document.getElementById('sectorColumnCheckboxes');
+  container.innerHTML = '';
+  
+  sectorColumnConfig.forEach((column, index) => {
+    const checkbox = document.createElement('span');
+    checkbox.className = 'column-checkbox';
+    checkbox.innerHTML = `
+      <input type="checkbox" id="sector-col-${index}" ${column.visible ? 'checked' : ''}>
+      <label for="sector-col-${index}">${column.title}</label>
+    `;
+    container.appendChild(checkbox);
+    
+    // Add event listener
+    checkbox.querySelector('input').addEventListener('change', function() {
+      column.visible = this.checked;
+      if (sectorTable) {
+        sectorTable.column(index).visible(this.checked);
+      }
+    });
+  });
+}
+
+// Initialize modal column controls
+function initializeModalColumnControls() {
+  const container = document.getElementById('modalColumnCheckboxes');
+  container.innerHTML = '';
+  
+  modalColumnConfig.forEach((column, index) => {
+    const checkbox = document.createElement('span');
+    checkbox.className = 'column-checkbox';
+    checkbox.innerHTML = `
+      <input type="checkbox" id="modal-col-${index}" ${column.visible ? 'checked' : ''}>
+      <label for="modal-col-${index}">${column.title}</label>
+    `;
+    container.appendChild(checkbox);
+    
+    // Add event listener
+    checkbox.querySelector('input').addEventListener('change', function() {
+      column.visible = this.checked;
+      // Refresh modal content if it's open
+      if (currentModalLocation) {
+        refreshModalServices(currentModalLocation);
+      }
+    });
+  });
+}
+
+// Toggle column controls visibility
+function toggleColumnControls() {
+  const controls = document.getElementById('columnControls');
+  controls.style.display = controls.style.display === 'none' ? 'block' : 'none';
+}
+
+// Toggle sector column controls visibility
+function toggleSectorColumnControls() {
+  const controls = document.getElementById('sectorColumnControls');
+  controls.style.display = controls.style.display === 'none' ? 'block' : 'none';
+}
+
+// Toggle modal column controls visibility
+function toggleModalColumnControls() {
+  const controls = document.getElementById('modalColumnControls');
+  controls.style.display = controls.style.display === 'none' ? 'block' : 'none';
+}
+
+// Switch between location and sector views
+function switchView(view) {
+  currentView = view;
+  
+  if (view === 'location') {
+    document.getElementById('locationView').style.display = 'block';
+    document.getElementById('sectorView').style.display = 'none';
+    document.getElementById('locationViewBtn').classList.add('active');
+    document.getElementById('sectorViewBtn').classList.remove('active');
+  } else {
+    document.getElementById('locationView').style.display = 'none';
+    document.getElementById('sectorView').style.display = 'block';
+    document.getElementById('locationViewBtn').classList.remove('active');
+    document.getElementById('sectorViewBtn').classList.add('active');
+  }
+}
+
+// Open charts modal
+function openChartsModal() {
+  renderCharts();
+  const chartsModal = new bootstrap.Modal(document.getElementById('chartsModal'));
+  chartsModal.show();
+}
+
+// AUTO-LOAD EXCEL FILE FUNCTIONALITY - ADDED THIS MISSING FUNCTION
+function autoLoadExcelFile() {
+  showLoading('Loading Excel file...');
+  
+  // Replace this URL with the actual path to your Excel file
+  const excelFileUrl = 'data.xlsx'; // Change this to your actual file path
+  
+  fetch(excelFileUrl)
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.arrayBuffer();
+    })
+    .then(data => {
+      showLoading('Processing Excel data...');
+      
+      // Process the Excel file
+      const workbook = XLSX.read(data, { type: 'array' });
+      processWorkbook(workbook);
+      
+      // Show success notification
+      showAutoLoadNotification('Excel file loaded successfully!');
+    })
+    .catch(error => {
+      console.error('Error loading Excel file:', error);
+      hideLoading();
+      
+      // Show error notification
+      showAutoLoadNotification('Error loading Excel file. Please check the file path.');
+      
+      // For demo purposes, you can load sample data here
+      // loadSampleData();
+    });
+}
+
+// Process the workbook data
+function processWorkbook(workbook) {
+  try {
+    workbookData = workbook;
+    
+    // Get sheet names
+    const sheetNames = workbook.SheetNames;
+    
+    // Process main sheet (first sheet)
+    const mainSheet = workbook.Sheets[sheetNames[0]];
+    mainSheetData = XLSX.utils.sheet_to_json(mainSheet, { defval: '' });
+    
+    // Add index to each row for reference
+    mainSheetData.forEach((row, index) => {
+      row._index = index + 1;
+      
+      // Try to extract coordinates from various possible column names
+      const lat = parseFloat(row.Latitude || row.latitude || row.Lat || row.lat || '');
+      const lon = parseFloat(row.Longitude || row.longitude || row.Lon || row.lon || row.Lng || row.lng || '');
+      
+      if (!isNaN(lat) && !isNaN(lon)) {
+        row._lat = lat;
+        row._lon = lon;
+      } else {
+        row._lat = null;
+        row._lon = null;
+      }
+    });
+    
+    // Process service sheets (all other sheets)
+    serviceSheets = {};
+    for (let i = 1; i < sheetNames.length; i++) {
+      const sheetName = sheetNames[i];
+      const sheet = workbook.Sheets[sheetName];
+      const sheetData = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+      
+      // Add parent index reference and sheet name
+      sheetData.forEach(row => {
+        row._sheet = sheetName;
+        
+        // Try to extract coordinates for service locations
+        const lat = parseFloat(row.Latitude || row.latitude || row.Lat || row.lat || '');
+        const lon = parseFloat(row.Longitude || row.longitude || row.Lon || row.lon || row.Lng || row.lng || '');
+        
+        if (!isNaN(lat) && !isNaN(lon)) {
+          row._lat = lat;
+          row._lon = lon;
+        } else {
+          row._lat = null;
+          row._lon = null;
+        }
+      });
+      
+      serviceSheets[sheetName] = sheetData;
+    }
+    
+    // Update the dashboard with the loaded data
+    updateDashboard();
+    hideLoading();
+    
+  } catch (error) {
+    console.error('Error processing workbook:', error);
+    hideLoading();
+    alert('Error processing Excel file: ' + error.message);
+  }
+}
+
+// Update dashboard statistics
+function updateStatistics() {
+  // 1. Total Community Centers
+  document.getElementById('totalLocations').textContent = mainSheetData.length.toLocaleString();
+  
+  // 2. Total Unique Service Providers
+  let uniqueServiceProviders = new Set();
+  Object.keys(serviceSheets).forEach(sheetName => {
+    serviceSheets[sheetName].forEach(service => {
+      const provider = getOrganizationName(service);
+      if (provider && provider !== 'Unknown Provider') {
+        uniqueServiceProviders.add(provider);
+      }
+    });
+  });
+  document.getElementById('totalServices').textContent = uniqueServiceProviders.size.toLocaleString();
+  
+  // 3. Total Unique Woredas
+  let uniqueWoredas = new Set();
+  mainSheetData.forEach(location => {
+    const woreda = location.Woreda || location.woreda;
+    if (woreda && woreda !== 'N/A') {
+      uniqueWoredas.add(woreda);
+    }
+  });
+  document.getElementById('serviceSheets').textContent = uniqueWoredas.size.toLocaleString();
+}
+
+// Get organization name from service data
+function getOrganizationName(service) {
+  return service.Organization || service.organization || service.Provider || service.provider || service.Agency || service.agency || 'Unknown Provider';
+}
+
+// Render main table
+function renderMainTable() {
+  const table = document.getElementById('mainTable');
+  
+  if (dataTable) {
+    dataTable.destroy();
+  }
+  
+  dataTable = $('#mainTable').DataTable({
+    data: [],
+    columns: columnConfig.map(col => ({
+      data: col.data,
+      className: col.className,
+      visible: col.visible
+    })),
+    pageLength: 10,
+    responsive: true,
+    order: [[0, 'asc']],
+    language: {
+      search: "Filter:",
+      lengthMenu: "Show _MENU_ entries"
+    }
+  });
+  
+  // Populate table with data
+  mainSheetData.forEach(location => {
+    // Count unique service providers
+    let uniqueProviders = new Set();
+    Object.keys(serviceSheets).forEach(sheetName => {
+      const linked = serviceSheets[sheetName].filter(service => 
+        String(service._parentindex) === String(location._index));
+      
+      linked.forEach(service => {
+        const provider = getOrganizationName(service);
+        uniqueProviders.add(provider);
+      });
+    });
+    
+    const linkedCount = uniqueProviders.size;
+    
+    // Make location name clickable if coordinates are available
+    const locationName = location['Community Center'] || 'Location ' + location._index;
+    const locationDisplay = !isNaN(location._lat) && !isNaN(location._lon) 
+      ? `<span class="clickable-location" data-index="${location._index}">${locationName}</span>`
+      : locationName;
+    
+    dataTable.row.add([
+      location.Region || 'N/A',
+      location.Zone || 'N/A',
+      location.Woreda || 'N/A',
+      locationDisplay,
+      location['CCCM Agency'] || 'N/A',
+      linkedCount > 0 ? 
+        `<span class="badge bg-primary rounded-pill" style="font-size: 0.7rem;">${linkedCount} service provider${linkedCount !== 1 ? 's' : ''}</span>` : 
+        `<span class="badge bg-secondary rounded-pill" style="font-size: 0.7rem;">No service providers</span>`
+    ]).draw(false);
+  });
+}
+
+// Render sector table
+function renderSectorTable() {
+  const sectors = getAllSectors();
+  
+  if (sectorTable) {
+    sectorTable.destroy();
+  }
+  
+  sectorTable = $('#sectorTable').DataTable({
+    data: [],
+    columns: sectorColumnConfig.map(col => ({
+      data: col.data,
+      className: col.className,
+      visible: col.visible
+    })),
+    pageLength: 10,
+    responsive: true,
+    order: [[0, 'asc']],
+    language: {
+      search: "Filter:",
+      lengthMenu: "Show _MENU_ entries"
+    }
+  });
+  
+  // Populate sector table
+  sectors.forEach(sector => {
+    const sectorServices = getSectorServices(sector);
+    
+    // Count unique providers
+    let uniqueProviders = new Set();
+    sectorServices.forEach(service => {
+      const provider = getOrganizationName(service);
+      if (provider && provider !== 'Unknown Provider') {
+        uniqueProviders.add(provider);
+      }
+    });
+    
+    // Count unique locations
+    let uniqueLocations = new Set();
+    sectorServices.forEach(service => {
+      if (service._parentindex) {
+        uniqueLocations.add(service._parentindex);
+      }
+    });
+    
+    sectorTable.row.add([
+      sector,
+      getServiceType(sector),
+      `<span class="badge bg-primary rounded-pill" style="font-size: 0.7rem;">${uniqueProviders.size}</span>`,
+      `<span class="badge bg-info rounded-pill" style="font-size: 0.7rem;">${uniqueLocations.size}</span>`,
+      `<button class="btn btn-sm btn-outline-primary view-sector-details-btn" data-sector="${sector}">
+        <i class="fas fa-eye me-1"></i>View Details
+      </button>`
+    ]).draw(false);
+  });
+}
+
+// Get all sectors from service sheets
+function getAllSectors() {
+  return Object.keys(serviceSheets);
+}
+
+// Get services for a specific sector
+function getSectorServices(sector) {
+  return serviceSheets[sector] || [];
+}
+
+// Get service type based on sector name
+function getServiceType(sector) {
+  if (sector.toLowerCase().includes('food')) return 'Food Assistance';
+  if (sector.toLowerCase().includes('wash')) return 'Water, Sanitation & Hygiene';
+  if (sector.toLowerCase().includes('shelter')) return 'Shelter & NFI';
+  if (sector.toLowerCase().includes('health')) return 'Health Services';
+  if (sector.toLowerCase().includes('protection')) return 'Protection';
+  if (sector.toLowerCase().includes('education')) return 'Education';
+  return 'Other Services';
+}
+
+// Render map with markers
+function renderMap() {
+  // Clear existing markers
+  if (markersLayer) {
+    mainMap.removeLayer(markersLayer);
+  }
+  
+  markersLayer = L.layerGroup().addTo(mainMap);
+  locationMarkers = {}; // Reset the markers storage
+  
+  const bounds = [];
+  let validMarkers = 0;
+  
+  mainSheetData.forEach(location => {
+    if (!isNaN(location._lat) && !isNaN(location._lon)) {
+      validMarkers++;
+      
+      // Count unique service providers
+      let uniqueProviders = new Set();
+      Object.keys(serviceSheets).forEach(sheetName => {
+        const linked = serviceSheets[sheetName].filter(service => 
+          String(service._parentindex) === String(location._index));
+        
+        linked.forEach(service => {
+          const provider = getOrganizationName(service);
+          uniqueProviders.add(provider);
+        });
+      });
+      
+      const linkedCount = uniqueProviders.size;
+      
+      // Determine marker color based on linked services
+      const color = linkedCount > 0 ? '#e74c3c' : '#3498db';
+      const radius = linkedCount > 0 ? 6 : 5;
+      
+      const marker = L.circleMarker([location._lat, location._lon], {
+        color: color,
+        fillColor: color,
+        fillOpacity: 0.7,
+        radius: radius,
+        weight: 1
+      }).addTo(markersLayer);
+      
+      // Store marker for quick access
+      locationMarkers[location._index] = marker;
+      
+      // Create popup content
+      const popupContent = `
+        <div style="min-width: 220px;">
+          <h6 style="font-size: 0.9rem;"><strong>${location['Community Center'] || 'Location ' + location._index}</strong></h6>
+          <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Region:</span> <span class="popup-value">${location.Region || 'N/A'}</span></p>
+          <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Zone:</span> <span class="popup-value">${location.Zone || 'N/A'}</span></p>
+          <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Woreda:</span> <span class="popup-value">${location.Woreda || 'N/A'}</span></p>
+          <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">CCCM Agency:</span> <span class="popup-value">${location['CCCM Agency'] || 'N/A'}</span></p>
+          <p class="mb-1" style="font-size: 0.8rem;"><span class="popup-key">Service Providers:</span> <span class="popup-value">${linkedCount}</span></p>
+          <p class="mb-0" style="font-size: 0.8rem;"><span class="popup-key">Coordinates:</span> <span class="popup-value">${location._lat.toFixed(6)}, ${location._lon.toFixed(6)}</span></p>
+          <div class="mt-1">
+            <button class="btn btn-sm btn-primary view-details-btn" data-index="${location._index}" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">
+              <i class="fas fa-info-circle me-1"></i>View Details
+            </button>
+          </div>
+        </div>
+      `;
+      
+      marker.bindPopup(popupContent);
+      
+      // Add label for community center
+      const locationName = location['Community Center'] || 'Location ' + location._index;
+      const label = L.marker([location._lat, location._lon], {
+        icon: L.divIcon({
+          className: 'map-label',
+          html: locationName,
+          iconSize: [100, 20],
+          iconAnchor: [50, 0]
+        })
+      }).addTo(markersLayer);
+      
+      // Add click event to open modal
+      marker.on('click', function() {
+        openDetailModal(location);
+      });
+      
+      bounds.push([location._lat, location._lon]);
+    }
+  });
+  
+  // Fit map to show all markers if we have any valid ones
+  if (bounds.length > 0) {
+    mainMap.fitBounds(bounds, { padding: [15, 15] });
+  }
+}
+
+// Open detail modal for a location
+function openDetailModal(location) {
+  currentModalLocation = location;
+  
+  // Update modal title
+  document.querySelector('#detailModal .modal-title').innerHTML = 
+    `<i class="fas fa-info-circle me-2"></i>${location['Community Center'] || 'Location ' + location._index}`;
+  
+  // Update location information
+  const locationInfo = document.getElementById('locationInfo');
+  locationInfo.innerHTML = `
+    <div class="service-detail">
+      <span class="location-info-key">Region:</span>
+      <span class="location-info-value">${location.Region || 'N/A'}</span>
+    </div>
+    <div class="service-detail">
+      <span class="location-info-key">Zone:</span>
+      <span class="location-info-value">${location.Zone || 'N/A'}</span>
+    </div>
+    <div class="service-detail">
+      <span class="location-info-key">Woreda:</span>
+      <span class="location-info-value">${location.Woreda || 'N/A'}</span>
+    </div>
+    <div class="service-detail">
+      <span class="location-info-key">Community Center:</span>
+      <span class="location-info-value">${location['Community Center'] || 'N/A'}</span>
+    </div>
+    <div class="service-detail">
+      <span class="location-info-key">CCCM Agency:</span>
+      <span class="location-info-value">${location['CCCM Agency'] || 'N/A'}</span>
+    </div>
+    <div class="service-detail">
+      <span class="location-info-key">Coordinates:</span>
+      <span class="location-info-value">${!isNaN(location._lat) && !isNaN(location._lon) ? 
+        `${location._lat.toFixed(6)}, ${location._lon.toFixed(6)}` : 'N/A'}</span>
+    </div>
+  `;
+  
+  // Initialize modal map
+  initializeModalMap();
+  
+  // Add main location marker to modal map
+  if (!isNaN(location._lat) && !isNaN(location._lon)) {
+    const mainMarker = L.circleMarker([location._lat, location._lon], {
+      color: '#e74c3c',
+      fillColor: '#e74c3c',
+      fillOpacity: 0.8,
+      radius: 8,
+      weight: 2
+    }).addTo(modalMap);
+    
+    mainMarker.bindPopup(`
+      <div style="min-width: 200px;">
+        <h6 style="font-size: 0.9rem;"><strong>${location['Community Center'] || 'Location ' + location._index}</strong></h6>
+        <p class="mb-0" style="font-size: 0.8rem;">Main Community Center Location</p>
+      </div>
+    `).openPopup();
+    
+    modalMap.setView([location._lat, location._lon], 12);
+  }
+  
+  // Refresh services in the modal
+  refreshModalServices(location);
+  
+  // Show the modal
+  const detailModal = new bootstrap.Modal(document.getElementById('detailModal'));
+  detailModal.show();
+}
+
+// Refresh modal services content
+function refreshModalServices(location) {
+  // Clear previous services
+  document.getElementById('cc-services').innerHTML = '';
+  document.getElementById('ca-services').innerHTML = '';
+  document.getElementById('other-services').innerHTML = '';
+  
+  let ccCount = 0;
+  let caCount = 0;
+  let otherCount = 0;
+  
+  // Process all service sheets
+  Object.keys(serviceSheets).forEach(sheetName => {
+    const linkedServices = serviceSheets[sheetName].filter(service => 
+      String(service._parentindex) === String(location._index));
+    
+    linkedServices.forEach(service => {
+      const serviceCard = createServiceCard(service, sheetName);
+      
+      // Categorize by service type
+      if (sheetName.toLowerCase().includes('cc')) {
+        document.getElementById('cc-services').appendChild(serviceCard);
+        ccCount++;
+      } else if (sheetName.toLowerCase().includes('ca')) {
+        document.getElementById('ca-services').appendChild(serviceCard);
+        caCount++;
+      } else {
+        document.getElementById('other-services').appendChild(serviceCard);
+        otherCount++;
+      }
+    });
+  });
+  
+  // Update service counts
+  document.getElementById('cc-count').textContent = ccCount;
+  document.getElementById('ca-count').textContent = caCount;
+  document.getElementById('other-count').textContent = otherCount;
+  
+  // Show "no services" message if applicable
+  if (ccCount === 0) {
+    document.getElementById('cc-services').innerHTML = '<div class="no-data"><i class="fas fa-inbox"></i><p>No Community Center services found</p></div>';
+  }
+  if (caCount === 0) {
+    document.getElementById('ca-services').innerHTML = '<div class="no-data"><i class="fas fa-inbox"></i><p>No Catchment Area services found</p></div>';
+  }
+  if (otherCount === 0) {
+    document.getElementById('other-services').innerHTML = '<div class="no-data"><i class="fas fa-inbox"></i><p>No other services found</p></div>';
+  }
+}
+
+// Create service card for modal
+function createServiceCard(service, sheetName) {
+  const card = document.createElement('div');
+  card.className = 'service-card';
+  
+  const provider = getOrganizationName(service);
+  const services = service.Services || service.services || 'Not specified';
+  const focalPerson = service['Focal Person Name'] || service['Focal Person'] || 'Not specified';
+  const phone = service['Phone Number'] || service.Phone || 'Not specified';
+  
+  // Get coordinates for this service if available
+  const hasCoords = !isNaN(service._lat) && !isNaN(service._lon);
+  const coordinates = hasCoords ? `${service._lat.toFixed(6)}, ${service._lon.toFixed(6)}` : 'Not specified';
+  
+  let detailsHtml = '';
+  
+  // Only show details that are enabled in modalColumnConfig
+  modalColumnConfig.forEach(column => {
+    if (column.visible) {
+      let value = '';
+      
+      switch (column.id) {
+        case 'services_provided':
+          value = services;
+          break;
+        case 'focal_person':
+          value = focalPerson;
+          break;
+        case 'phone':
+          value = phone;
+          break;
+        case 'coordinates':
+          value = coordinates;
+          break;
+        case 'map_action':
+          value = hasCoords ? 
+            `<button class="go-to-location-btn" data-lat="${service._lat}" data-lon="${service._lon}" data-provider="${provider}">
+              <i class="fas fa-map-marker-alt me-1"></i>Show on Map
+            </button>` : 
+            'No coordinates';
+          break;
+      }
+      
+      if (value) {
+        detailsHtml += `
+          <div class="service-detail">
+            <span class="detail-key">${column.title}:</span>
+            <span class="detail-value">${value}</span>
+          </div>
+        `;
+      }
+    }
+  });
+  
+  card.innerHTML = `
+    <div class="service-header">
+      <div>
+        <h6 class="service-title">${provider}</h6>
+        <div class="service-provider">${sheetName}</div>
+      </div>
+      <span class="sector-badge">${getServiceType(sheetName)}</span>
+    </div>
+    <div class="service-details">
+      ${detailsHtml}
+    </div>
+  `;
+  
+  return card;
+}
+
+// Clear pinned markers from modal map
+function clearPinnedMarkers() {
+  pinnedMarkers.forEach(marker => {
+    if (modalMap && marker) {
+      modalMap.removeLayer(marker);
+    }
+  });
+  pinnedMarkers = [];
+}
+
+// Add pinned marker to modal map
+function addPinnedMarker(lat, lon, title, provider) {
+  if (!modalMap) return;
+  
+  const marker = L.marker([lat, lon], {
+    icon: L.divIcon({
+      className: 'pinned-marker',
+      html: '<i class="fas fa-map-pin" style="color: #e74c3c; font-size: 24px;"></i>',
+      iconSize: [24, 24],
+      iconAnchor: [12, 24]
+    })
+  }).addTo(modalMap);
+  
+  marker.bindPopup(`
+    <div style="min-width: 200px;">
+      <h6 style="font-size: 0.9rem;"><strong>${title}</strong></h6>
+      <p class="mb-0" style="font-size: 0.8rem;">${provider}</p>
+    </div>
+  `).openPopup();
+  
+  pinnedMarkers.push(marker);
+  modalMap.setView([lat, lon], 15);
+}
+
+// Open sector detail modal
+function openSectorDetailModal(sector) {
+  const sectorServices = getSectorServices(sector);
+  
+  // Update modal title
+  document.querySelector('#sectorDetailModal .modal-title').innerHTML = 
+    `<i class="fas fa-layer-group me-2"></i>${sector} - ${getServiceType(sector)}`;
+  
+  // Update sector information
+  const sectorInfo = document.getElementById('sectorInfo');
+  
+  // Count unique providers and locations
+  let uniqueProviders = new Set();
+  let uniqueLocations = new Set();
+  
+  sectorServices.forEach(service => {
+    const provider = getOrganizationName(service);
+    if (provider && provider !== 'Unknown Provider') {
+      uniqueProviders.add(provider);
+    }
+    if (service._parentindex) {
+      uniqueLocations.add(service._parentindex);
+    }
+  });
+  
+  sectorInfo.innerHTML = `
+    <div class="service-detail">
+      <span class="location-info-key">Sector:</span>
+      <span class="location-info-value">${sector}</span>
+    </div>
+    <div class="service-detail">
+      <span class="location-info-key">Service Type:</span>
+      <span class="location-info-value">${getServiceType(sector)}</span>
+    </div>
+    <div class="service-detail">
+      <span class="location-info-key">Service Providers:</span>
+      <span class="location-info-value">${uniqueProviders.size}</span>
+    </div>
+    <div class="service-detail">
+      <span class="location-info-key">Locations Covered:</span>
+      <span class="location-info-value">${uniqueLocations.size}</span>
+    </div>
+    <div class="service-detail">
+      <span class="location-info-key">Total Services:</span>
+      <span class="location-info-value">${sectorServices.length}</span>
+    </div>
+  `;
+  
+  // Initialize sector modal map
+  initializeSectorModalMap();
+  
+  // Add markers for all services in this sector
+  const bounds = [];
+  sectorServices.forEach(service => {
+    if (!isNaN(service._lat) && !isNaN(service._lon)) {
+      const provider = getOrganizationName(service);
+      const marker = L.circleMarker([service._lat, service._lon], {
+        color: serviceColors[sector.toLowerCase()] || serviceColors.default,
+        fillColor: serviceColors[sector.toLowerCase()] || serviceColors.default,
+        fillOpacity: 0.7,
+        radius: 6,
+        weight: 1
+      }).addTo(sectorModalMap);
+      
+      marker.bindPopup(`
+        <div style="min-width: 220px;">
+          <h6 style="font-size: 0.9rem;"><strong>${provider}</strong></h6>
+          <p class="mb-1" style="font-size: 0.8rem;">${sector} - ${getServiceType(sector)}</p>
+          <p class="mb-0" style="font-size: 0.8rem;">Coordinates: ${service._lat.toFixed(6)}, ${service._lon.toFixed(6)}</p>
+        </div>
+      `);
+      
+      bounds.push([service._lat, service._lon]);
+    }
+  });
+  
+  // Fit map to show all markers
+  if (bounds.length > 0) {
+    sectorModalMap.fitBounds(bounds, { padding: [15, 15] });
+  } else {
+    sectorModalMap.setView([9.145, 40.4897], 6);
+  }
+  
+  // Update sector services list
+  const sectorServicesContainer = document.getElementById('sectorServices');
+  sectorServicesContainer.innerHTML = '';
+  
+  if (sectorServices.length === 0) {
+    sectorServicesContainer.innerHTML = '<div class="no-data"><i class="fas fa-inbox"></i><p>No services found for this sector</p></div>';
+    return;
+  }
+  
+  // Group services by provider
+  const servicesByProvider = {};
+  sectorServices.forEach(service => {
+    const provider = getOrganizationName(service);
+    if (!servicesByProvider[provider]) {
+      servicesByProvider[provider] = [];
+    }
+    servicesByProvider[provider].push(service);
+  });
+  
+  // Create service cards for each provider
+  Object.keys(servicesByProvider).forEach(provider => {
+    const services = servicesByProvider[provider];
+    const card = document.createElement('div');
+    card.className = 'sector-service-card';
+    
+    let servicesHtml = '';
+    services.forEach(service => {
+      const location = mainSheetData.find(loc => String(loc._index) === String(service._parentindex));
+      const locationName = location ? (location['Community Center'] || `Location ${location._index}`) : 'Unknown Location';
+      
+      servicesHtml += `
+        <div class="sector-service-detail">
+          <span class="detail-key">Location:</span>
+          <span class="detail-value">${locationName}</span>
+        </div>
+      `;
+    });
+    
+    card.innerHTML = `
+      <div class="sector-service-header">
+        <div>
+          <h6 class="sector-service-title">${provider}</h6>
+          <div class="sector-service-location">${services.length} location${services.length !== 1 ? 's' : ''}</div>
+        </div>
+      </div>
+      <div class="sector-service-details">
+        ${servicesHtml}
+      </div>
+    `;
+    
+    sectorServicesContainer.appendChild(card);
+  });
+  
+  // Show the modal
+  const sectorModal = new bootstrap.Modal(document.getElementById('sectorDetailModal'));
+  sectorModal.show();
+}
+
+// Clear sector pinned markers
+function clearSectorPinnedMarkers() {
+  // Implementation for clearing sector pinned markers
+}
+
+// Add sector pinned marker
+function addSectorPinnedMarker(lat, lon, title, provider) {
+  // Implementation for adding sector pinned markers
+}
+
+// Setup mobile touch events
+function setupMobileTouchEvents() {
+  // Add touch event handlers for better mobile experience
+  document.addEventListener('touchstart', function(e) {
+    // Handle clickable locations in table
+    if (e.target.classList.contains('clickable-location')) {
+      e.preventDefault();
+      const index = e.target.getAttribute('data-index');
+      const location = mainSheetData.find(loc => String(loc._index) === String(index));
+      if (location) {
+        openDetailModal(location);
+      }
+    }
+  }, { passive: false });
+}
+
+// Initialize filters
 function initializeFilters() {
   // Get unique values for each filter
   const regions = [...new Set(mainSheetData.map(item => item.Region || item.region).filter(Boolean))].sort();
@@ -1682,7 +2608,7 @@ function initializeFilters() {
   document.getElementById('resetFilters').addEventListener('click', resetFilters);
 }
 
-// Apply filters to data
+// Apply filters
 function applyFilters() {
   // Update current filters
   currentFilters.region = document.getElementById('regionFilter').value;
@@ -1710,7 +2636,7 @@ function applyFilters() {
   updateStatisticsWithFilteredData(filteredData);
 }
 
-// Reset all filters
+// Reset filters
 function resetFilters() {
   document.getElementById('regionFilter').value = '';
   document.getElementById('zoneFilter').value = '';
@@ -1733,7 +2659,7 @@ function updateTableWithFilteredData(filteredData) {
     dataTable.clear();
     
     filteredData.forEach(location => {
-      // Count unique service providers (not just services)
+      // Count unique service providers
       let uniqueProviders = new Set();
       Object.keys(serviceSheets).forEach(sheetName => {
         const linked = serviceSheets[sheetName].filter(service => 
@@ -1861,10 +2787,10 @@ function updateMapWithFilteredData(filteredData) {
 
 // Update statistics with filtered data
 function updateStatisticsWithFilteredData(filteredData) {
-  // 1. Total Community Centers (was Total Locations)
+  // 1. Total Community Centers
   document.getElementById('totalLocations').textContent = filteredData.length.toLocaleString();
   
-  // 2. Total Unique Service Providers (was Total Services)
+  // 2. Total Unique Service Providers
   let uniqueServiceProviders = new Set();
   Object.keys(serviceSheets).forEach(sheetName => {
     serviceSheets[sheetName].forEach(service => {
@@ -1879,7 +2805,7 @@ function updateStatisticsWithFilteredData(filteredData) {
   });
   document.getElementById('totalServices').textContent = uniqueServiceProviders.size.toLocaleString();
   
-  // 3. Total Unique Woredas (was Service Sectors)
+  // 3. Total Unique Woredas
   let uniqueWoredas = new Set();
   filteredData.forEach(location => {
     const woreda = location.Woreda || location.woreda;
@@ -1890,9 +2816,9 @@ function updateStatisticsWithFilteredData(filteredData) {
   document.getElementById('serviceSheets').textContent = uniqueWoredas.size.toLocaleString();
 }
 
-// Get data for charts
+// Get chart data
 function getChartData() {
-  // NEW: Top Service Providers by Sector data
+  // Top Service Providers by Sector data
   const topProvidersBySector = {};
   const providerLocationCounts = {};
   
@@ -1919,7 +2845,7 @@ function getChartData() {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5);
   
-  // NEW: Top Locations by Sector data
+  // Top Locations by Sector data
   const locationProviderCounts = {};
   
   // Count providers per location across all sectors
@@ -1952,7 +2878,7 @@ function getChartData() {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5);
   
-  // NEW: Provider Distribution by Sector data - SORTED from highest to lowest
+  // Provider Distribution by Sector data - SORTED from highest to lowest
   const providerSectorDistribution = {};
   const sectors = getAllSectors();
   
@@ -1980,7 +2906,7 @@ function getChartData() {
     sortedProviderSectorDistribution[sector] = count;
   });
   
-  // NEW: CCCM Partners data
+  // CCCM Partners data
   const cccmPartnersData = {};
   
   // Count community centers and woredas per CCCM agency
@@ -2051,7 +2977,7 @@ function renderCharts() {
     cccmPartnersChart.destroy();
   }
   
-  // NEW: Top 5 Service Providers by Sector Chart
+  // Top 5 Service Providers by Sector Chart
   const topProvidersCtx = document.getElementById('topProvidersBySectorChart').getContext('2d');
   topProvidersBySectorChart = new Chart(topProvidersCtx, {
     type: 'bar',
@@ -2071,7 +2997,7 @@ function renderCharts() {
       maintainAspectRatio: false,
       plugins: {
         legend: {
-          display: false // Remove legend as requested
+          display: false
         },
         tooltip: {
           callbacks: {
@@ -2099,7 +3025,7 @@ function renderCharts() {
     }
   });
   
-  // NEW: Top 5 Locations Covered by Sector Chart
+  // Top 5 Locations Covered by Sector Chart
   const topLocationsCtx = document.getElementById('topLocationsBySectorChart').getContext('2d');
   topLocationsBySectorChart = new Chart(topLocationsCtx, {
     type: 'bar',
@@ -2119,7 +3045,7 @@ function renderCharts() {
       maintainAspectRatio: false,
       plugins: {
         legend: {
-          display: false // Remove legend as requested
+          display: false
         },
         tooltip: {
           callbacks: {
@@ -2147,7 +3073,7 @@ function renderCharts() {
     }
   });
   
-  // NEW: Provider Distribution by Sector Chart - SORTED from highest to lowest
+  // Provider Distribution by Sector Chart - SORTED from highest to lowest
   const providerSectorCtx = document.getElementById('providerSectorDistributionChart').getContext('2d');
   providerSectorDistributionChart = new Chart(providerSectorCtx, {
     type: 'bar',
@@ -2167,7 +3093,7 @@ function renderCharts() {
       maintainAspectRatio: false,
       plugins: {
         legend: {
-          display: false // Remove legend as requested
+          display: false
         },
         tooltip: {
           callbacks: {
@@ -2195,7 +3121,7 @@ function renderCharts() {
     }
   });
   
-  // NEW: CCCM Partners Chart
+  // CCCM Partners Chart
   const cccmPartnersCtx = document.getElementById('cccmPartnersChart').getContext('2d');
   cccmPartnersChart = new Chart(cccmPartnersCtx, {
     type: 'bar',
@@ -2256,21 +3182,15 @@ function renderCharts() {
   });
 }
 
-// Rest of the JavaScript code remains the same
-// ... (all other JavaScript functions remain unchanged) ...
-
-// Update dashboard statistics and views
+// Update dashboard
 function updateDashboard() {
   updateStatistics();
-  initializeFilters(); // Initialize filters after data is loaded
+  initializeFilters();
   renderMainTable();
   renderSectorTable();
   renderMap();
-  setupMobileTouchEvents(); // Setup mobile events after data is loaded
+  setupMobileTouchEvents();
 }
-
-// Rest of the code remains the same
-// ... (all other functions remain unchanged) ...
 
 // Event listeners
 document.addEventListener('DOMContentLoaded', function() {
@@ -2288,44 +3208,19 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Toggle column controls button
   document.getElementById('toggleColumnsBtn').addEventListener('click', toggleColumnControls);
-  document.getElementById('toggleColumnsBtn').addEventListener('touchstart', function(e) {
-    e.preventDefault();
-    toggleColumnControls();
-  }, { passive: false });
   
   // Toggle sector column controls button
   document.getElementById('toggleSectorColumnsBtn').addEventListener('click', toggleSectorColumnControls);
-  document.getElementById('toggleSectorColumnsBtn').addEventListener('touchstart', function(e) {
-    e.preventDefault();
-    toggleSectorColumnControls();
-  }, { passive: false });
   
   // Toggle modal column controls button
   document.getElementById('toggleModalColumnsBtn').addEventListener('click', toggleModalColumnControls);
-  document.getElementById('toggleModalColumnsBtn').addEventListener('touchstart', function(e) {
-    e.preventDefault();
-    toggleModalColumnControls();
-  }, { passive: false });
   
   // View toggle buttons
   document.getElementById('locationViewBtn').addEventListener('click', () => switchView('location'));
-  document.getElementById('locationViewBtn').addEventListener('touchstart', function(e) {
-    e.preventDefault();
-    switchView('location');
-  }, { passive: false });
-  
   document.getElementById('sectorViewBtn').addEventListener('click', () => switchView('sector'));
-  document.getElementById('sectorViewBtn').addEventListener('touchstart', function(e) {
-    e.preventDefault();
-    switchView('sector');
-  }, { passive: false });
   
   // Chart button
   document.getElementById('chartButton').addEventListener('click', openChartsModal);
-  document.getElementById('chartButton').addEventListener('touchstart', function(e) {
-    e.preventDefault();
-    openChartsModal();
-  }, { passive: false });
   
   // Add event delegation for dynamically created elements
   document.addEventListener('click', function(e) {
@@ -2363,13 +3258,13 @@ document.addEventListener('DOMContentLoaded', function() {
         if (detailModal.classList.contains('show')) {
           // Add a pinned marker to the modal map
           if (modalMap) {
-            clearPinnedMarkers(); // Clear previous pins
+            clearPinnedMarkers();
             addPinnedMarker(lat, lon, 'Service Location', provider);
           }
         } else if (sectorModal.classList.contains('show')) {
           // Add a pinned marker to the sector modal map
           if (sectorModalMap) {
-            clearSectorPinnedMarkers(); // Clear previous pins
+            clearSectorPinnedMarkers();
             addSectorPinnedMarker(lat, lon, 'Service Location', provider);
           }
         }
@@ -2377,31 +3272,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // Add touch event delegation for mobile
-  document.addEventListener('touchstart', function(e) {
-    // Handle sector detail view buttons
-    if (e.target.closest('.view-sector-details-btn')) {
-      const button = e.target.closest('.view-sector-details-btn');
-      const sector = button.getAttribute('data-sector');
-      if (sector) {
-        e.preventDefault();
-        openSectorDetailModal(sector);
-      }
-    }
-  }, { passive: false });
-  
   // Auto-load the file when the page opens
   autoLoadExcelFile();
 });
 
-// Export functions for global access (optional)
+// Export functions for global access
 window.processWorkbook = processWorkbook;
 window.openDetailModal = openDetailModal;
 window.openSectorDetailModal = openSectorDetailModal;
 window.initializeModalMap = initializeModalMap;
-window.zoomToLocation = zoomToLocation;
 window.openChartsModal = openChartsModal;
 </script>
 </body>
 </html>
-
