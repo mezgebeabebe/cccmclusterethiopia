@@ -866,9 +866,137 @@
       background-color: #1b657c !important;
       border-color: #1b657c !important;
     }
+
+    /* Read Me Button Styles */
+.read-me-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1001;
+}
+
+.read-me-btn {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  color: white;
+  border: none;
+  border-radius: 25px;
+  padding: 10px 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.read-me-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+  background: linear-gradient(135deg, #c0392b, #a93226);
+}
+
+/* Blinking animation */
+.blinking {
+  animation: blink 2s infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Read Me Modal Styles */
+.read-me-modal .modal-dialog {
+  max-width: 800px;
+}
+
+.read-me-content {
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.read-me-section {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.read-me-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.read-me-section h5 {
+  color: var(--primary-color);
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+}
+
+.read-me-section h5 i {
+  margin-right: 8px;
+  color: var(--accent-color);
+}
+
+.read-me-section ul {
+  padding-left: 1.5rem;
+  margin-bottom: 0;
+}
+
+.read-me-section li {
+  margin-bottom: 0.5rem;
+}
+
+.read-me-section li:last-child {
+  margin-bottom: 0;
+}
+
+.feature-highlight {
+  background: linear-gradient(135deg, #1b657c, #1abc9c);
+  color: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+  text-align: center;
+}
+
+.feature-highlight h6 {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+/* Mobile responsiveness for Read Me button */
+@media (max-width: 768px) {
+  .read-me-container {
+    top: 10px;
+    right: 10px;
+  }
+  
+  .read-me-btn {
+    padding: 8px 16px;
+    font-size: 0.8rem;
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  .read-me-modal .modal-dialog {
+    margin: 10px;
+  }
+}
   </style>
 </head>
 <body>
+
+  <!-- Blinking Read Me Button -->
+<div class="read-me-container">
+  <button class="read-me-btn blinking" id="readMeBtn" title="How to use this dashboard">
+    <i class="fas fa-info-circle me-1"></i> Read Me
+  </button>
+</div>
 
 <!-- Floating Chart Button with Title -->
 <div class="floating-chart-container">
@@ -1378,6 +1506,88 @@
     </div>
   </div>
 </div>
+
+
+<!-- Read Me Modal -->
+<div class="modal fade read-me-modal" id="readMeModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" style="font-size: 1.1rem;">
+          <i class="fas fa-info-circle me-2"></i>How to Use This Dashboard
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="read-me-content">
+          <div class="feature-highlight">
+            <h6>Welcome to the CCCM Catchment Area Service Mapping Dashboard</h6>
+            <p class="mb-0" style="font-size: 0.85rem;">This interactive tool helps you visualize and analyze service coverage across all sectors</p>
+          </div>
+          
+          <div class="read-me-section">
+            <h5><i class="fas fa-map-marked-alt"></i> Map Navigation</h5>
+            <ul>
+              <li><strong>Zoom:</strong> Use the +/- buttons or mouse wheel to zoom in/out</li>
+              <li><strong>Pan:</strong> Click and drag to move around the map</li>
+              <li><strong>Reset View:</strong> Click the globe button to reset to default view</li>
+              <li><strong>Markers:</strong> Blue markers = locations, Red markers = locations with services</li>
+            </ul>
+          </div>
+          
+          <div class="read-me-section">
+            <h5><i class="fas fa-filter"></i> Data Filtering</h5>
+            <ul>
+              <li>Use the filter section to narrow down data by Region, Zone, Woreda, or Community Center</li>
+              <li>Filters work across all views (Map, Table, and Charts)</li>
+              <li>Click "Reset Filters" to clear all filters</li>
+            </ul>
+          </div>
+          
+          <div class="read-me-section">
+            <h5><i class="fas fa-table"></i> Table Views</h5>
+            <ul>
+              <li><strong>Location View:</strong> See all community centers and their service providers</li>
+              <li><strong>Sector View:</strong> View data organized by service sectors (WASH, Health, etc.)</li>
+              <li><strong>Click any row</strong> to open detailed information in a modal</li>
+              <li>Use the "Columns" button to show/hide table columns</li>
+            </ul>
+          </div>
+          
+          <div class="read-me-section">
+            <h5><i class="fas fa-chart-pie"></i> Analytics & Details</h5>
+            <ul>
+              <li>Click the floating chart button for analytics dashboard</li>
+              <li>View detailed location information by clicking table rows or map markers</li>
+              <li>In detail modals, use tabs to switch between service categories</li>
+              <li>Use "Go to Location" buttons to pin service locations on the map</li>
+            </ul>
+          </div>
+          
+          <div class="read-me-section">
+            <h5><i class="fas fa-mobile-alt"></i> Mobile Usage</h5>
+            <ul>
+              <li>Fully responsive design for tablets and smartphones</li>
+              <li>Touch-friendly buttons and controls</li>
+              <li>Optimized for both portrait and landscape orientations</li>
+            </ul>
+          </div>
+          
+          <div class="alert alert-info mt-3" style="font-size: 0.85rem;">
+            <i class="fas fa-lightbulb me-2"></i>
+            <strong>Tip:</strong> Data is automatically loaded from the latest service mapping Excel file. The dashboard updates in real-time as you interact with filters and views.
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary btn-sm" data-bs-dismiss="modal">Got It!</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JS libs -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>  
 
 <!-- JS libs -->
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
@@ -4087,6 +4297,22 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
   }, { passive: false });
+
+
+  // Read Me button event listener
+  document.getElementById('readMeBtn').addEventListener('click', function() {
+    this.classList.remove('blinking'); // Stop blinking after first click
+    const modal = new bootstrap.Modal(document.getElementById('readMeModal'));
+    modal.show();
+  });
+
+  // Also add touch event for mobile
+  document.getElementById('readMeBtn').addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    this.classList.remove('blinking'); // Stop blinking after first click
+    const modal = new bootstrap.Modal(document.getElementById('readMeModal'));
+    modal.show();
+  }, { passive: false });
   
   // Auto-load the file when the page opens
   autoLoadExcelFile();
@@ -4102,6 +4328,7 @@ window.openChartsModal = openChartsModal;
 </script>
 </body>
 </html>
+
 
 
 
