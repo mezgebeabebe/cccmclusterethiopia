@@ -1699,7 +1699,7 @@ function resetFilters() {
   applyFilters();
 }
 
-// Update table with filtered data
+// Update table with filtered data - FIXED VERSION
 function updateTableWithFilteredData(filteredData) {
   if (dataTable) {
     dataTable.clear();
@@ -1725,6 +1725,7 @@ function updateTableWithFilteredData(filteredData) {
         ? `<span class="clickable-location" data-index="${location._index}">${locationName}</span>`
         : locationName;
       
+      // Add row directly to DataTable without data parameter mapping
       dataTable.row.add([
         location.Region || 'N/A',
         location.Zone || 'N/A',
@@ -1734,8 +1735,10 @@ function updateTableWithFilteredData(filteredData) {
         linkedCount > 0 ? 
           `<span class="badge bg-primary rounded-pill" style="font-size: 0.7rem;">${linkedCount} service provider${linkedCount !== 1 ? 's' : ''}</span>` : 
           `<span class="badge bg-secondary rounded-pill" style="font-size: 0.7rem;">No service providers</span>`
-      ]).draw(false);
+      ]);
     });
+    
+    dataTable.draw();
   }
 }
 
@@ -3182,7 +3185,7 @@ function setupMobileTouchEvents() {
   }, { passive: false });
 }
 
-// Render main table
+// Render main table - FIXED VERSION
 function renderMainTable() {
   const tableBody = document.querySelector('#mainTable tbody');
   tableBody.innerHTML = '';
@@ -3228,68 +3231,31 @@ function renderMainTable() {
     tableBody.appendChild(row);
   });
   
-  // Initialize DataTable with column visibility control
-  if (!dataTable) {
-    // Prepare columns based on configuration
-    const columns = columnConfig.map(col => ({
-      data: col.data,
-      title: col.title,
-      className: col.className,
-      visible: col.visible
-    }));
-    
-    dataTable = $('#mainTable').DataTable({
-      pageLength: 10,
-      responsive: true,
-      dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
-      language: {
-        search: "_INPUT_",
-        searchPlaceholder: "Search locations...",
-        lengthMenu: "Show _MENU_ entries",
-        info: "Showing _START_ to _END_ of _TOTAL_ entries",
-        infoEmpty: "Showing 0 to 0 of 0 entries",
-        infoFiltered: "(filtered from _MAX_ total entries)",
-        paginate: {
-          first: "First",
-          last: "Last",
-          next: "Next",
-          previous: "Previous"
-        }
-      },
-      columns: columns
-    });
-  } else {
+  // Initialize DataTable - FIXED VERSION
+  if (dataTable) {
     dataTable.destroy();
-    
-    // Prepare columns based on configuration
-    const columns = columnConfig.map(col => ({
-      data: col.data,
-      title: col.title,
-      className: col.className,
-      visible: col.visible
-    }));
-    
-    dataTable = $('#mainTable').DataTable({
-      pageLength: 10,
-      responsive: true,
-      dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
-      language: {
-        search: "_INPUT_",
-        searchPlaceholder: "Search locations...",
-        lengthMenu: "Show _MENU_ entries",
-        info: "Showing _START_ to _END_ of _TOTAL_ entries",
-        infoEmpty: "Showing 0 to 0 of 0 entries",
-        infoFiltered: "(filtered from _MAX_ total entries)",
-        paginate: {
-          first: "First",
-          last: "Last",
-          next: "Next",
-          previous: "Previous"
-        }
-      },
-      columns: columns
-    });
   }
+  
+  dataTable = $('#mainTable').DataTable({
+    pageLength: 10,
+    responsive: true,
+    dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+    language: {
+      search: "_INPUT_",
+      searchPlaceholder: "Search locations...",
+      lengthMenu: "Show _MENU_ entries",
+      info: "Showing _START_ to _END_ of _TOTAL_ entries",
+      infoEmpty: "Showing 0 to 0 of 0 entries",
+      infoFiltered: "(filtered from _MAX_ total entries)",
+      paginate: {
+        first: "First",
+        last: "Last",
+        next: "Next",
+        previous: "Previous"
+      }
+    }
+    // Remove the columns configuration to fix the DataTables error
+  });
 }
 
 // Render sector table
@@ -4127,3 +4093,4 @@ window.openChartsModal = openChartsModal;
 </script>
 </body>
 </html>
+
