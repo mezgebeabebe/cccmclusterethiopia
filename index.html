@@ -3116,29 +3116,34 @@ function updateStatistics() {
 // Setup mobile touch events
 function setupMobileTouchEvents() {
   // For table rows - use event delegation for paginated rows
-  document.querySelector('#mainTable tbody').addEventListener('click', function(e) {
-    const row = e.target.closest('tr');
-    if (row) {
-      const index = row.getAttribute('data-index');
+  document.addEventListener('click', function(e) {
+  // Check if the click originated from a table row in the main table
+  const row = e.target.closest('#mainTable tbody tr');
+  if (row) {
+    const index = row.getAttribute('data-index');
+    if (index) {
       const location = mainSheetData.find(loc => String(loc._index) === String(index));
       if (location) {
         openDetailModal(location);
       }
     }
-  });
+  }
+});
 
-  // For touch events on mobile
-  document.querySelector('#mainTable tbody').addEventListener('touchstart', function(e) {
-    const row = e.target.closest('tr');
-    if (row) {
-      e.preventDefault();
-      const index = row.getAttribute('data-index');
+// Enhanced touch event delegation for mobile
+document.addEventListener('touchstart', function(e) {
+  const row = e.target.closest('#mainTable tbody tr');
+  if (row) {
+    e.preventDefault();
+    const index = row.getAttribute('data-index');
+    if (index) {
       const location = mainSheetData.find(loc => String(loc._index) === String(index));
       if (location) {
         openDetailModal(location);
       }
     }
-  }, { passive: false });
+  }
+}, { passive: false });
 
   // For clickable locations - use event delegation
   document.addEventListener('click', function(e) {
@@ -4093,4 +4098,5 @@ window.openChartsModal = openChartsModal;
 </script>
 </body>
 </html>
+
 
