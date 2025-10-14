@@ -16,6 +16,8 @@
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
   <style>
     :root {
       --primary-color: #2c3e50;
@@ -2009,13 +2011,20 @@ function showAutoLoadNotification(message) {
 }
 
 // Initialize filter dropdowns
+// Initialize filter dropdowns - FIXED DUPLICATE ISSUE
 function initializeFilters() {
-  // Get unique values for each filter
+  // Get unique values for each filter - FIXED: Use proper case handling
   const regions = [...new Set(mainSheetData.map(location => location.Region).filter(Boolean))];
   const zones = [...new Set(mainSheetData.map(location => location.Zone).filter(Boolean))];
   const woredas = [...new Set(mainSheetData.map(location => location.Woreda).filter(Boolean))];
   const communityCenters = [...new Set(mainSheetData.map(location => location['Community Center']).filter(Boolean))];
-  const cccmAgencies = [...new Set(mainSheetData.map(location => location['CCCM Agency']).filter(Boolean))]; // New filter
+  
+  // FIXED: Better handling for CCCM Agency to avoid duplicates
+  const cccmAgencies = [...new Set(mainSheetData
+    .map(location => location['CCCM Agency'])
+    .filter(agency => agency && agency !== 'N/A' && agency.trim() !== '')
+    .map(agency => agency.trim()) // Remove extra spaces
+  )];
   
   // Populate region filter
   const regionSelect = document.getElementById('regionFilter');
@@ -2053,14 +2062,16 @@ function initializeFilters() {
     communityCenterSelect.appendChild(option);
   });
 
-   // Populate CCCM Agency filter - NEW
-      const cccmAgencySelect = document.getElementById('cccmAgencyFilter');
-      cccmAgencies.forEach(agency => {
-        const option = document.createElement('option');
-        option.value = agency;
-        option.textContent = agency;
-        cccmAgencySelect.appendChild(option);
-      });
+  // FIXED: Populate CCCM Agency filter - Clear existing options first
+  const cccmAgencySelect = document.getElementById('cccmAgencyFilter');
+  cccmAgencySelect.innerHTML = '<option value="">All CCCM Agencies</option>'; // Clear existing
+  
+  cccmAgencies.forEach(agency => {
+    const option = document.createElement('option');
+    option.value = agency;
+    option.textContent = agency;
+    cccmAgencySelect.appendChild(option);
+  });
   
   // Add event listeners for filters
   document.getElementById('regionFilter').addEventListener('change', function() {
@@ -2085,8 +2096,8 @@ function initializeFilters() {
 
   // NEW: CCCM Agency filter event listener
   document.getElementById('cccmAgencyFilter').addEventListener('change', function() {
-     cccmAgencyFilter = this.value;
-     applyFilters();
+    cccmAgencyFilter = this.value;
+    applyFilters();
   });
   
   document.getElementById('resetFilters').addEventListener('click', function() {
@@ -4816,146 +4827,6 @@ function autoLoadExcelFile() {
     });
 
 
-  
-
-// Event listeners
-document.addEventListener('DOMContentLoaded', function() {
-  // Initialize main map
-  initializeMainMap();
-  
-  // Initialize column controls
-  initializeColumnControls();
-  
-  // Initialize sector column controls
-  initializeSectorColumnControls();
-  
-  // Initialize modal column controls
-  initializeModalColumnControls();
-  
-  // Toggle column controls button
-  document.getElementById('toggleColumnsBtn').addEventListener('click', toggleColumnControls);
-  document.getElementById('toggleColumnsBtn').addEventListener('touchstart', function(e) {
-    e.preventDefault();
-    toggleColumnControls();
-  }, { passive: false });
-  
-  // Toggle sector column controls button
-  document.getElementById('toggleSectorColumnsBtn').addEventListener('click', toggleSectorColumnControls);
-  document.getElementById('toggleSectorColumnsBtn').addEventListener('touchstart', function(e) {
-    e.preventDefault();
-    toggleSectorColumnControls();
-  }, { passive: false });
-  
-  // Toggle modal column controls button
-  document.getElementById('toggleModalColumnsBtn').addEventListener('click', toggleModalColumnControls);
-  document.getElementById('toggleModalColumnsBtn').addEventListener('touchstart', function(e) {
-    e.preventDefault();
-    toggleModalColumnControls();
-  }, { passive: false });
-  
-  // View toggle buttons
-  document.getElementById('locationViewBtn').addEventListener('click', () => switchView('location'));
-  document.getElementById('locationViewBtn').addEventListener('touchstart', function(e) {
-    e.preventDefault();
-    switchView('location');
-  }, { passive: false });
-  
-  document.getElementById('sectorViewBtn').addEventListener('click', () => switchView('sector'));
-  document.getElementById('sectorViewBtn').addEventListener('touchstart', function(e) {
-    e.preventDefault();
-    switchView('sector');
-  }, { passive: false });
-  
-  // Chart button
-  document.getElementById('chartButton').addEventListener('click', openChartsModal);
-  document.getElementById('chartButton').addEventListener('touchstart', function(e) {
-    e.preventDefault();
-    openChartsModal();
-  }, { passive: false });
-  
-  // Add event delegation for dynamically created elements
-  document.addEventListener('click', function(e) {
-    // Handle view details buttons in location view
-    if (e.target.closest('.view-details-btn')) {
-      const button = e.target.closest('.view-details-btn');
-      const index = button.getAttribute('data-index');
-      const location = mainSheetData.find(loc => String(loc._index) === String(index));
-      if (location) {
-        openDetailModal(location);
-      }
-    }
-
-    // Handle sector detail view buttons
-    if (e.target.closest('.view-sector-details-btn')) {
-      const button = e.target.closest('.view-sector-details-btn');
-      const sector = button.getAttribute('data-sector');
-      if (sector) {
-        openSectorDetailModal(sector);
-      }
-    }
-    
-    // Handle "Go to Location" buttons in service cards and map popups
-    if (e.target.closest('.go-to-location-btn')) {
-      const button = e.target.closest('.go-to-location-btn');
-      const lat = parseFloat(button.getAttribute('data-lat'));
-      const lon = parseFloat(button.getAttribute('data-lon'));
-      const provider = button.getAttribute('data-provider') || 'Service Location';
-      
-      if (!isNaN(lat) && !isNaN(lon)) {
-        // Check which map is currently active
-        const detailModal = document.getElementById('detailModal');
-        const sectorModal = document.getElementById('sectorDetailModal');
-        
-        if (detailModal.classList.contains('show')) {
-          // Add a pinned marker to the modal map
-          if (modalMap) {
-            clearPinnedMarkers(); // Clear previous pins
-            addPinnedMarker(lat, lon, 'Service Location', provider);
-          }
-        } else if (sectorModal.classList.contains('show')) {
-          // Add a pinned marker to the sector modal map
-          if (sectorModalMap) {
-            clearSectorPinnedMarkers(); // Clear previous pins
-            addSectorPinnedMarker(lat, lon, 'Service Location', provider);
-          }
-        }
-      }
-    }
-  });
-
-  // Add touch event delegation for mobile
-  document.addEventListener('touchstart', function(e) {
-    // Handle sector detail view buttons
-    if (e.target.closest('.view-sector-details-btn')) {
-      const button = e.target.closest('.view-sector-details-btn');
-      const sector = button.getAttribute('data-sector');
-      if (sector) {
-        e.preventDefault();
-        openSectorDetailModal(sector);
-      }
-    }
-  }, { passive: false });
-
-
-  // Read Me button event listener
-  document.getElementById('readMeBtn').addEventListener('click', function() {
-    this.classList.remove('blinking'); // Stop blinking after first click
-    const modal = new bootstrap.Modal(document.getElementById('readMeModal'));
-    modal.show();
-  });
-
-  // Also add touch event for mobile
-  document.getElementById('readMeBtn').addEventListener('touchstart', function(e) {
-    e.preventDefault();
-    this.classList.remove('blinking'); // Stop blinking after first click
-    const modal = new bootstrap.Modal(document.getElementById('readMeModal'));
-    modal.show();
-  }, { passive: false });
-  
-  // Auto-load the file when the page opens
-  autoLoadExcelFile();
-});
-
 // Export functions for global access (optional)
 window.processWorkbook = processWorkbook;
 window.openDetailModal = openDetailModal;
@@ -4966,4 +4837,5 @@ window.openChartsModal = openChartsModal;
 </script>
 </body>
 </html>
+
 
