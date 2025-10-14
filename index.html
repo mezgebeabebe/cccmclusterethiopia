@@ -1269,48 +1269,47 @@ if (window.console && window.console.log) {
   </div>
 
   <!-- New Filter Section -->
-  <div class="filter-container">
-    <h6 class="mb-3"><i class="fas fa-filter me-2"></i>Filter Data</h6>
-    <div class="row filter-row">
-      <div class="col-md-3 mb-2">
-        <div class="filter-label">Region</div>
-        <select class="form-select form-select-sm" id="regionFilter">
-          <option value="">All Regions</option>
-        </select>
-      </div>
-      <div class="col-md-3 mb-2">
-        <div class="filter-label">Zone</div>
-        <select class="form-select form-select-sm" id="zoneFilter">
-          <option value="">All Zones</option>
-        </select>
-      </div>
-      <div class="col-md-3 mb-2">
-        <div class="filter-label">Woreda</div>
-        <select class="form-select form-select-sm" id="woredaFilter">
-          <option value="">All Woredas</option>
-        </select>
-      </div>
-      <div class="col-md-3 mb-2">
-        <div class="filter-label">Community Center</div>
-        <select class="form-select form-select-sm" id="communityCenterFilter">
-          <option value="">All Community Centers</option>
-        </select>
-      </div>
+  <!-- New Filter Section - Single Line Layout -->
+<div class="filter-container">
+  <h6 class="mb-3"><i class="fas fa-filter me-2"></i>Filter Data</h6>
+  <div class="row filter-row align-items-end">
+    <div class="col-md-2 mb-2">
+      <div class="filter-label">Region</div>
+      <select class="form-select form-select-sm" id="regionFilter">
+        <option value="">All Regions</option>
+      </select>
     </div>
-    <div class="row filter-row">
-      <div class="col-md-3 mb-2">
-        <div class="filter-label">CCCM Agency</div>
-        <select class="form-select form-select-sm" id="cccmAgencyFilter">
-          <option value="">All CCCM Agencies</option>
-        </select>
-      </div>
-      <div class="col-md-9 mb-2 d-flex align-items-end">
-        <button class="btn btn-sm btn-outline-secondary" id="resetFilters">
-          <i class="fas fa-undo me-1"></i> Reset Filters
-        </button>
-      </div>
+    <div class="col-md-2 mb-2">
+      <div class="filter-label">Zone</div>
+      <select class="form-select form-select-sm" id="zoneFilter">
+        <option value="">All Zones</option>
+      </select>
+    </div>
+    <div class="col-md-2 mb-2">
+      <div class="filter-label">Woreda</div>
+      <select class="form-select form-select-sm" id="woredaFilter">
+        <option value="">All Woredas</option>
+      </select>
+    </div>
+    <div class="col-md-2 mb-2">
+      <div class="filter-label">Community Center</div>
+      <select class="form-select form-select-sm" id="communityCenterFilter">
+        <option value="">All Community Centers</option>
+      </select>
+    </div>
+    <div class="col-md-2 mb-2">
+      <div class="filter-label">CCCM Agency</div>
+      <select class="form-select form-select-sm" id="cccmAgencyFilter">
+        <option value="">All CCCM Agencies</option>
+      </select>
+    </div>
+    <div class="col-md-2 mb-2">
+      <button class="btn btn-sm btn-outline-secondary w-100" id="resetFilters">
+        <i class="fas fa-undo me-1"></i> Reset Filters
+      </button>
     </div>
   </div>
+</div>
 
   <div class="row compact-grid align-items-stretch">
     <div class="col-lg-8 mb-3">
@@ -4900,4 +4899,5 @@ window.exportToPDF = exportToPDF;
 </script>
 </body>
 </html>
+
 
