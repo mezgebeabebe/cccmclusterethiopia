@@ -868,28 +868,28 @@
     }
 
     /* Read Me Button Styles */
-.read-me-container {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 1001;
-}
-
-.read-me-btn {
-  background: linear-gradient(135deg, #e74c3c, #c0392b);
-  color: white;
-  border: none;
-  border-radius: 25px;
-  padding: 10px 20px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+ .read-me-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1001;
+    }
+    
+    .read-me-btn {
+      background: linear-gradient(135deg, #1b657c, #1abc9c);
+      color: white;
+      border: none;
+      border-radius: 25px;
+      padding: 10px 20px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      box-shadow: 0 4px 15px rgba(27, 101, 124, 0.3);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
 
 .read-me-btn:hover {
   transform: translateY(-2px);
@@ -971,17 +971,23 @@
 
 /* Mobile responsiveness for Read Me button */
 @media (max-width: 768px) {
+
+  .pdf-export-container {
+        top: 10px;
+        left: 10px;
+      }
+  
   .read-me-container {
     top: 10px;
     right: 10px;
   }
   
-  .read-me-btn {
-    padding: 8px 16px;
-    font-size: 0.8rem;
-    min-height: 44px;
-    min-width: 44px;
-  }
+ .pdf-export-btn, .read-me-btn {
+        padding: 8px 16px;
+        font-size: 0.8rem;
+        min-height: 44px;
+        min-width: 44px;
+      }
   
   .read-me-modal .modal-dialog {
     margin: 10px;
@@ -1101,16 +1107,53 @@
     font-size: 0.8rem;
   }
 }
-
 /* Ensure footer doesn't overlap with floating chart button */
 @media (max-width: 768px) {
   .floating-chart-container {
     bottom: 100px; /* Adjust if footer is too tall on mobile */
   }
 }
+
+/* PDF Export Button Styles */
+    .pdf-export-container {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 1001;
+    }
+    
+    .pdf-export-btn {
+      background: linear-gradient(135deg, #e74c3c, #c0392b);
+      color: white;
+      border: none;
+      border-radius: 25px;
+      padding: 10px 20px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .pdf-export-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+      background: linear-gradient(135deg, #c0392b, #a93226);
+    }
+
+    
   </style>
 </head>
 <body>
+  <!-- PDF Export Button -->
+  <div class="pdf-export-container">
+    <button class="pdf-export-btn" id="pdfExportBtn" title="Export Dashboard to PDF">
+      <i class="fas fa-file-pdf me-1"></i> Export PDF
+    </button>
+  </div>
 
   <!-- Blinking Read Me Button -->
 <div class="read-me-container">
@@ -1216,6 +1259,15 @@
           <option value="">All Community Centers</option>
         </select>
       </div>
+
+      <div class="col-md-2 mb-2">
+          <div class="filter-label">CCCM Agency</div>
+          <select class="form-select form-select-sm" id="cccmAgencyFilter">
+            <option value="">All CCCM Agencies</option>
+          </select>
+        </div>
+      
+ 
     </div>
     <div class="row">
       <div class="col-12 text-end">
@@ -1786,6 +1838,7 @@ let regionFilter = '';
 let zoneFilter = '';
 let woredaFilter = '';
 let communityCenterFilter = '';
+let cccmAgencyFilter = ''; // New filter variable
 
 // Column configuration - EASILY CUSTOMIZE VISIBLE COLUMNS HERE
 const columnConfig = [
@@ -1962,6 +2015,7 @@ function initializeFilters() {
   const zones = [...new Set(mainSheetData.map(location => location.Zone).filter(Boolean))];
   const woredas = [...new Set(mainSheetData.map(location => location.Woreda).filter(Boolean))];
   const communityCenters = [...new Set(mainSheetData.map(location => location['Community Center']).filter(Boolean))];
+  const cccmAgencies = [...new Set(mainSheetData.map(location => location['CCCM Agency']).filter(Boolean))]; // New filter
   
   // Populate region filter
   const regionSelect = document.getElementById('regionFilter');
@@ -1998,6 +2052,15 @@ function initializeFilters() {
     option.textContent = center;
     communityCenterSelect.appendChild(option);
   });
+
+   // Populate CCCM Agency filter - NEW
+      const cccmAgencySelect = document.getElementById('cccmAgencyFilter');
+      cccmAgencies.forEach(agency => {
+        const option = document.createElement('option');
+        option.value = agency;
+        option.textContent = agency;
+        cccmAgencySelect.appendChild(option);
+      });
   
   // Add event listeners for filters
   document.getElementById('regionFilter').addEventListener('change', function() {
@@ -2018,6 +2081,12 @@ function initializeFilters() {
   document.getElementById('communityCenterFilter').addEventListener('change', function() {
     communityCenterFilter = this.value;
     applyFilters();
+  });
+
+  // NEW: CCCM Agency filter event listener
+  document.getElementById('cccmAgencyFilter').addEventListener('change', function() {
+     cccmAgencyFilter = this.value;
+     applyFilters();
   });
   
   document.getElementById('resetFilters').addEventListener('click', function() {
@@ -2044,6 +2113,11 @@ function applyFilters() {
   if (communityCenterFilter) {
     filteredData = filteredData.filter(location => location['Community Center'] === communityCenterFilter);
   }
+
+  // NEW: CCCM Agency filter
+  if (cccmAgencyFilter) {
+    filteredData = filteredData.filter(location => location['CCCM Agency'] === cccmAgencyFilter);
+  }
   
   // Update the table with filtered data
   updateTableWithFilteredData(filteredData);
@@ -2061,11 +2135,13 @@ function resetFilters() {
   document.getElementById('zoneFilter').value = '';
   document.getElementById('woredaFilter').value = '';
   document.getElementById('communityCenterFilter').value = '';
+  document.getElementById('cccmAgencyFilter').value = ''; // NEW
   
   regionFilter = '';
   zoneFilter = '';
   woredaFilter = '';
   communityCenterFilter = '';
+  cccmAgencyFilter = ''; // NEW
   
   applyFilters();
 }
@@ -4341,6 +4417,407 @@ function autoLoadExcelFile() {
     });
 }
 
+// PDF Export Function
+    function exportToPDF() {
+      // Show loading indicator
+      showLoading('Generating PDF report...');
+      
+      // Create a temporary element for PDF generation
+      const element = document.createElement('div');
+      element.style.padding = '20px';
+      element.style.backgroundColor = 'white';
+      element.style.maxWidth = '1200px';
+      element.style.margin = '0 auto';
+      
+      // Get current date for the report
+      const currentDate = new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      
+      // Create PDF content
+      element.innerHTML = `
+        <div style="text-align: center; margin-bottom: 30px;">
+          <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+            <img src="cccmlogo.png" alt="CCCM Cluster Logo" style="height: 80px; margin-right: 15px;">
+            <div>
+              <h1 style="color: #1b657c; margin: 0; font-size: 28px;">Catchment Area Service Mapping</h1>
+              <p style="color: #666; margin: 5px 0 0 0; font-size: 16px;">Comprehensive Service Coverage Analysis</p>
+            </div>
+          </div>
+          <div style="border-top: 2px solid #1b657c; padding-top: 10px;">
+            <p style="margin: 0; color: #666; font-size: 14px;">Report Generated: ${currentDate}</p>
+          </div>
+        </div>
+        
+        <div style="margin-bottom: 30px;">
+          <h2 style="color: #1b657c; border-bottom: 1px solid #eee; padding-bottom: 10px;">Executive Summary</h2>
+          <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+            <div style="text-align: center; flex: 1; padding: 15px; background: #f8f9fa; border-radius: 8px; margin: 0 10px;">
+              <h3 style="color: #1b657c; margin: 0; font-size: 24px;">${document.getElementById('totalLocations').textContent}</h3>
+              <p style="margin: 5px 0 0 0; color: #666;">Community Centers</p>
+            </div>
+            <div style="text-align: center; flex: 1; padding: 15px; background: #f8f9fa; border-radius: 8px; margin: 0 10px;">
+              <h3 style="color: #1b657c; margin: 0; font-size: 24px;">${document.getElementById('totalServices').textContent}</h3>
+              <p style="margin: 5px 0 0 0; color: #666;">Service Providers</p>
+            </div>
+            <div style="text-align: center; flex: 1; padding: 15px; background: #f8f9fa; border-radius: 8px; margin: 0 10px;">
+              <h3 style="color: #1b657c; margin: 0; font-size: 24px;">${document.getElementById('serviceSheets').textContent}</h3>
+              <p style="margin: 5px 0 0 0; color: #666;">Woredas</p>
+            </div>
+          </div>
+        </div>
+        
+        <div style="margin-bottom: 30px;">
+          <h2 style="color: #1b657c; border-bottom: 1px solid #eee; padding-bottom: 10px;">Current Filter Status</h2>
+          <div style="display: flex; flex-wrap: wrap; margin-top: 15px;">
+            <div style="flex: 1; min-width: 200px; margin: 5px 10px;">
+              <strong>Region:</strong> ${regionFilter || 'All Regions'}
+            </div>
+            <div style="flex: 1; min-width: 200px; margin: 5px 10px;">
+              <strong>Zone:</strong> ${zoneFilter || 'All Zones'}
+            </div>
+            <div style="flex: 1; min-width: 200px; margin: 5px 10px;">
+              <strong>Woreda:</strong> ${woredaFilter || 'All Woredas'}
+            </div>
+            <div style="flex: 1; min-width: 200px; margin: 5px 10px;">
+              <strong>Community Center:</strong> ${communityCenterFilter || 'All Centers'}
+            </div>
+            <div style="flex: 1; min-width: 200px; margin: 5px 10px;">
+              <strong>CCCM Agency:</strong> ${cccmAgencyFilter || 'All Agencies'}
+            </div>
+          </div>
+        </div>
+        
+        <div style="margin-bottom: 30px;">
+          <h2 style="color: #1b657c; border-bottom: 1px solid #eee; padding-bottom: 10px;">Service Coverage Map</h2>
+          <div style="text-align: center; margin-top: 20px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+            <p style="color: #666; font-style: italic;">Map visualization is available in the interactive dashboard</p>
+            <p style="color: #999; font-size: 12px;">For detailed geographical analysis, please refer to the online dashboard</p>
+          </div>
+        </div>
+        
+        <div style="margin-bottom: 30px;">
+          <h2 style="color: #1b657c; border-bottom: 1px solid #eee; padding-bottom: 10px;">Key Service Providers</h2>
+          <div style="margin-top: 20px;">
+            ${generateServiceProvidersTable()}
+          </div>
+        </div>
+        
+        <div style="margin-bottom: 30px;">
+          <h2 style="color: #1b657c; border-bottom: 1px solid #eee; padding-bottom: 10px;">Sector Distribution</h2>
+          <div style="margin-top: 20px;">
+            ${generateSectorDistributionTable()}
+          </div>
+        </div>
+        
+        <div style="margin-top: 40px; padding-top: 20px; border-top: 2px solid #1b657c;">
+          <div style="text-align: center;">
+            <p style="margin: 0; color: #666; font-size: 14px;">CCCM Cluster Ethiopia - Catchment Area Service Mapping Dashboard</p>
+            <p style="margin: 5px 0 0 0; color: #999; font-size: 12px;">This report was generated from the interactive dashboard. For the most up-to-date information, visit the online platform.</p>
+          </div>
+        </div>
+      `;
+      
+      // PDF options
+      const options = {
+        margin: [10, 10, 10, 10],
+        filename: `CCCM-Service-Mapping-Report-${currentDate.replace(/\s+/g, '-')}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { 
+          scale: 2,
+          useCORS: true,
+          logging: true
+        },
+        jsPDF: { 
+          unit: 'mm', 
+          format: 'a4', 
+          orientation: 'portrait' 
+        },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      };
+      
+      // Generate PDF
+      html2pdf()
+        .set(options)
+        .from(element)
+        .toPdf()
+        .get('pdf')
+        .then(function(pdf) {
+          // Add page numbers
+          const totalPages = pdf.internal.getNumberOfPages();
+          for (let i = 1; i <= totalPages; i++) {
+            pdf.setPage(i);
+            pdf.setFontSize(10);
+            pdf.setTextColor(150);
+            pdf.text(
+              `Page ${i} of ${totalPages}`,
+              pdf.internal.pageSize.getWidth() / 2,
+              pdf.internal.pageSize.getHeight() - 10,
+              { align: 'center' }
+            );
+          }
+        })
+        .save()
+        .then(() => {
+          hideLoading();
+          showAutoLoadNotification('PDF report generated successfully!');
+        })
+        .catch(error => {
+          hideLoading();
+          console.error('PDF generation error:', error);
+          alert('Error generating PDF. Please try again.');
+        });
+    }
+
+    // Helper function to generate service providers table for PDF
+    function generateServiceProvidersTable() {
+      // Get filtered data
+      let filteredData = [...mainSheetData];
+      
+      if (regionFilter) {
+        filteredData = filteredData.filter(location => location.Region === regionFilter);
+      }
+      
+      if (zoneFilter) {
+        filteredData = filteredData.filter(location => location.Zone === zoneFilter);
+      }
+      
+      if (woredaFilter) {
+        filteredData = filteredData.filter(location => location.Woreda === woredaFilter);
+      }
+      
+      if (communityCenterFilter) {
+        filteredData = filteredData.filter(location => location['Community Center'] === communityCenterFilter);
+      }
+      
+      if (cccmAgencyFilter) {
+        filteredData = filteredData.filter(location => location['CCCM Agency'] === cccmAgencyFilter);
+      }
+      
+      // Count service providers
+      const providerCounts = {};
+      Object.keys(serviceSheets).forEach(sheetName => {
+        serviceSheets[sheetName].forEach(service => {
+          const provider = getOrganizationName(service);
+          if (provider && provider !== 'Unknown Provider') {
+            // Only count if the service is linked to a filtered location
+            if (filteredData.some(location => String(location._index) === String(service._parentindex))) {
+              if (!providerCounts[provider]) {
+                providerCounts[provider] = 0;
+              }
+              providerCounts[provider]++;
+            }
+          }
+        });
+      });
+      
+      // Sort providers by count (highest to lowest)
+      const sortedProviders = Object.entries(providerCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10); // Top 10 providers
+      
+      if (sortedProviders.length === 0) {
+        return '<p style="color: #666; text-align: center; font-style: italic;">No service providers found with current filters</p>';
+      }
+      
+      let tableHTML = `
+        <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+          <thead>
+            <tr style="background-color: #1b657c; color: white;">
+              <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Service Provider</th>
+              <th style="padding: 10px; text-align: center; border: 1px solid #ddd;">Locations Covered</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      
+      sortedProviders.forEach(([provider, count], index) => {
+        const rowColor = index % 2 === 0 ? '#f8f9fa' : 'white';
+        tableHTML += `
+          <tr style="background-color: ${rowColor};">
+            <td style="padding: 8px; border: 1px solid #ddd;">${provider}</td>
+            <td style="padding: 8px; text-align: center; border: 1px solid #ddd;">${count}</td>
+          </tr>
+        `;
+      });
+      
+      tableHTML += `
+          </tbody>
+        </table>
+      `;
+      
+      return tableHTML;
+    }
+
+    // Helper function to generate sector distribution table for PDF
+    function generateSectorDistributionTable() {
+      // Get filtered data
+      let filteredData = [...mainSheetData];
+      
+      if (regionFilter) {
+        filteredData = filteredData.filter(location => location.Region === regionFilter);
+      }
+      
+      if (zoneFilter) {
+        filteredData = filteredData.filter(location => location.Zone === zoneFilter);
+      }
+      
+      if (woredaFilter) {
+        filteredData = filteredData.filter(location => location.Woreda === woredaFilter);
+      }
+      
+      if (communityCenterFilter) {
+        filteredData = filteredData.filter(location => location['Community Center'] === communityCenterFilter);
+      }
+      
+      if (cccmAgencyFilter) {
+        filteredData = filteredData.filter(location => location['CCCM Agency'] === cccmAgencyFilter);
+      }
+      
+      // Count providers per sector
+      const sectorCounts = {};
+      const sectors = getAllSectors();
+      
+      sectors.forEach(sector => {
+        const sectorServices = getSectorServices(sector);
+        let uniqueProviders = new Set();
+        
+        sectorServices.forEach(service => {
+          const provider = getOrganizationName(service);
+          if (provider && provider !== 'Unknown Provider') {
+            // Only count if the service is linked to a filtered location
+            if (filteredData.some(location => String(location._index) === String(service._parentindex))) {
+              uniqueProviders.add(provider);
+            }
+          }
+        });
+        
+        sectorCounts[sector] = uniqueProviders.size;
+      });
+      
+      // Sort sectors by count (highest to lowest)
+      const sortedSectors = Object.entries(sectorCounts)
+        .sort((a, b) => b[1] - a[1]);
+      
+      if (sortedSectors.length === 0) {
+        return '<p style="color: #666; text-align: center; font-style: italic;">No sector data found with current filters</p>';
+      }
+      
+      let tableHTML = `
+        <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+          <thead>
+            <tr style="background-color: #1b657c; color: white;">
+              <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Sector</th>
+              <th style="padding: 10px; text-align: center; border: 1px solid #ddd;">Service Providers</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      
+      sortedSectors.forEach(([sector, count], index) => {
+        const rowColor = index % 2 === 0 ? '#f8f9fa' : 'white';
+        tableHTML += `
+          <tr style="background-color: ${rowColor};">
+            <td style="padding: 8px; border: 1px solid #ddd;">${sector.toUpperCase()}</td>
+            <td style="padding: 8px; text-align: center; border: 1px solid #ddd;">${count}</td>
+          </tr>
+        `;
+      });
+      
+      tableHTML += `
+          </tbody>
+        </table>
+      `;
+      
+      return tableHTML;
+    }
+
+    // Event listeners - UPDATED WITH PDF EXPORT
+    document.addEventListener('DOMContentLoaded', function() {
+      // Initialize main map
+      initializeMainMap();
+      
+      // Initialize column controls
+      initializeColumnControls();
+      
+      // Initialize sector column controls
+      initializeSectorColumnControls();
+      
+      // Initialize modal column controls
+      initializeModalColumnControls();
+      
+      // Toggle column controls button
+      document.getElementById('toggleColumnsBtn').addEventListener('click', toggleColumnControls);
+      document.getElementById('toggleColumnsBtn').addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        toggleColumnControls();
+      }, { passive: false });
+      
+      // Toggle sector column controls button
+      document.getElementById('toggleSectorColumnsBtn').addEventListener('click', toggleSectorColumnControls);
+      document.getElementById('toggleSectorColumnsBtn').addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        toggleSectorColumnControls();
+      }, { passive: false });
+      
+      // Toggle modal column controls button
+      document.getElementById('toggleModalColumnsBtn').addEventListener('click', toggleModalColumnControls);
+      document.getElementById('toggleModalColumnsBtn').addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        toggleModalColumnControls();
+      }, { passive: false });
+      
+      // View toggle buttons
+      document.getElementById('locationViewBtn').addEventListener('click', () => switchView('location'));
+      document.getElementById('locationViewBtn').addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        switchView('location');
+      }, { passive: false });
+      
+      document.getElementById('sectorViewBtn').addEventListener('click', () => switchView('sector'));
+      document.getElementById('sectorViewBtn').addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        switchView('sector');
+      }, { passive: false });
+      
+      // Chart button
+      document.getElementById('chartButton').addEventListener('click', openChartsModal);
+      document.getElementById('chartButton').addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        openChartsModal();
+      }, { passive: false });
+      
+      // PDF Export button - NEW
+      document.getElementById('pdfExportBtn').addEventListener('click', exportToPDF);
+      document.getElementById('pdfExportBtn').addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        exportToPDF();
+      }, { passive: false });
+      
+      // Read Me button event listener
+      document.getElementById('readMeBtn').addEventListener('click', function() {
+        this.classList.remove('blinking'); // Stop blinking after first click
+        const modal = new bootstrap.Modal(document.getElementById('readMeModal'));
+        modal.show();
+      });
+
+      // Also add touch event for mobile
+      document.getElementById('readMeBtn').addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        this.classList.remove('blinking'); // Stop blinking after first click
+        const modal = new bootstrap.Modal(document.getElementById('readMeModal'));
+        modal.show();
+      }, { passive: false });
+      
+      // Auto-load the file when the page opens
+      autoLoadExcelFile();
+    });
+
+
+  
+
 // Event listeners
 document.addEventListener('DOMContentLoaded', function() {
   // Initialize main map
@@ -4489,14 +4966,4 @@ window.openChartsModal = openChartsModal;
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
 
