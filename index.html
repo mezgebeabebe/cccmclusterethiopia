@@ -15,6 +15,9 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
   <style>
     :root {
@@ -1108,6 +1111,63 @@
     bottom: 100px; /* Adjust if footer is too tall on mobile */
   }
 }
+
+/* PDF Export Button Styles */
+.pdf-export-container {
+  position: fixed;
+  bottom: 30px;
+  left: 30px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.pdf-export-title {
+  background: rgba(231, 76, 60, 0.9);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 5px;
+  margin-bottom: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  max-width: 200px;
+  text-align: center;
+}
+
+.pdf-export-btn {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  color: white;
+  border: none;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.pdf-export-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+}
+
+.pdf-export-btn:active {
+  transform: scale(0.95);
+}
+
+/* Mobile responsiveness for PDF export button */
+@media (max-width: 768px) {
+  .pdf-export-container {
+    bottom: 100px;
+    left: 20px;
+  }
+}
   </style>
 </head>
 <body>
@@ -1116,6 +1176,16 @@
 <div class="read-me-container">
   <button class="read-me-btn blinking" id="readMeBtn" title="How to use this dashboard">
     <i class="fas fa-info-circle me-1"></i> Read Me
+  </button>
+</div>
+
+<!-- PDF Export Button with Title -->
+<div class="pdf-export-container">
+  <div class="pdf-export-title">
+    Export Report
+  </div>
+  <button class="pdf-export-btn" id="pdfExportBtn" title="Export to PDF">
+    <i class="fas fa-file-pdf"></i>
   </button>
 </div>
 
@@ -1217,8 +1287,14 @@
         </select>
       </div>
     </div>
-    <div class="row">
-      <div class="col-12 text-end">
+    <div class="row filter-row">
+      <div class="col-md-3 mb-2">
+        <div class="filter-label">CCCM Agency</div>
+        <select class="form-select form-select-sm" id="cccmAgencyFilter">
+          <option value="">All CCCM Agencies</option>
+        </select>
+      </div>
+      <div class="col-md-9 mb-2 d-flex align-items-end">
         <button class="btn btn-sm btn-outline-secondary" id="resetFilters">
           <i class="fas fa-undo me-1"></i> Reset Filters
         </button>
@@ -1699,7 +1775,7 @@
           <div class="read-me-section">
             <h5><i class="fas fa-filter"></i> Data Filtering</h5>
             <ul>
-              <li>Use the filter section to narrow down data by Region, Zone, Woreda, or Community Center</li>
+              <li>Use the filter section to narrow down data by Region, Zone, Woreda, Community Center, or CCCM Agency</li>
               <li>Filters work across all views (Map, Table, and Charts)</li>
               <li>Click "Reset Filters" to clear all filters</li>
             </ul>
@@ -1722,6 +1798,15 @@
               <li>View detailed location information by clicking table rows or map markers</li>
               <li>In detail modals, use tabs to switch between service categories</li>
               <li>Use "Go to Location" buttons to pin service locations on the map</li>
+            </ul>
+          </div>
+          
+          <div class="read-me-section">
+            <h5><i class="fas fa-file-pdf"></i> Export to PDF</h5>
+            <ul>
+              <li>Click the PDF export button to generate a comprehensive report</li>
+              <li>The PDF includes all location information, service details, and statistics</li>
+              <li>Perfect for sharing with stakeholders or for documentation purposes</li>
             </ul>
           </div>
           
@@ -1786,6 +1871,7 @@ let regionFilter = '';
 let zoneFilter = '';
 let woredaFilter = '';
 let communityCenterFilter = '';
+let cccmAgencyFilter = '';
 
 // Column configuration - EASILY CUSTOMIZE VISIBLE COLUMNS HERE
 const columnConfig = [
@@ -1962,6 +2048,7 @@ function initializeFilters() {
   const zones = [...new Set(mainSheetData.map(location => location.Zone).filter(Boolean))];
   const woredas = [...new Set(mainSheetData.map(location => location.Woreda).filter(Boolean))];
   const communityCenters = [...new Set(mainSheetData.map(location => location['Community Center']).filter(Boolean))];
+  const cccmAgencies = [...new Set(mainSheetData.map(location => location['CCCM Agency']).filter(Boolean))];
   
   // Populate region filter
   const regionSelect = document.getElementById('regionFilter');
@@ -1999,6 +2086,15 @@ function initializeFilters() {
     communityCenterSelect.appendChild(option);
   });
   
+  // Populate CCCM agency filter
+  const cccmAgencySelect = document.getElementById('cccmAgencyFilter');
+  cccmAgencies.forEach(agency => {
+    const option = document.createElement('option');
+    option.value = agency;
+    option.textContent = agency;
+    cccmAgencySelect.appendChild(option);
+  });
+  
   // Add event listeners for filters
   document.getElementById('regionFilter').addEventListener('change', function() {
     regionFilter = this.value;
@@ -2017,6 +2113,11 @@ function initializeFilters() {
   
   document.getElementById('communityCenterFilter').addEventListener('change', function() {
     communityCenterFilter = this.value;
+    applyFilters();
+  });
+  
+  document.getElementById('cccmAgencyFilter').addEventListener('change', function() {
+    cccmAgencyFilter = this.value;
     applyFilters();
   });
   
@@ -2045,6 +2146,10 @@ function applyFilters() {
     filteredData = filteredData.filter(location => location['Community Center'] === communityCenterFilter);
   }
   
+  if (cccmAgencyFilter) {
+    filteredData = filteredData.filter(location => location['CCCM Agency'] === cccmAgencyFilter);
+  }
+  
   // Update the table with filtered data
   updateTableWithFilteredData(filteredData);
   
@@ -2061,11 +2166,13 @@ function resetFilters() {
   document.getElementById('zoneFilter').value = '';
   document.getElementById('woredaFilter').value = '';
   document.getElementById('communityCenterFilter').value = '';
+  document.getElementById('cccmAgencyFilter').value = '';
   
   regionFilter = '';
   zoneFilter = '';
   woredaFilter = '';
   communityCenterFilter = '';
+  cccmAgencyFilter = '';
   
   applyFilters();
 }
@@ -2582,6 +2689,10 @@ function getChartData() {
   
   if (communityCenterFilter) {
     filteredData = filteredData.filter(location => location['Community Center'] === communityCenterFilter);
+  }
+  
+  if (cccmAgencyFilter) {
+    filteredData = filteredData.filter(location => location['CCCM Agency'] === cccmAgencyFilter);
   }
   
   // Top Service Providers by Sector data
@@ -4341,6 +4452,288 @@ function autoLoadExcelFile() {
     });
 }
 
+// Export to PDF function
+function exportToPDF() {
+  showLoading('Generating PDF report...');
+  
+  // Get the current date for the report
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+  
+  // Create a new jsPDF instance
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF('p', 'mm', 'a4');
+  
+  // Set document properties
+  doc.setProperties({
+    title: 'CCCM Catchment Area Service Mapping Report',
+    subject: 'Service Mapping Report',
+    author: 'CCCM Cluster Ethiopia',
+    keywords: 'CCCM, Service Mapping, Ethiopia',
+    creator: 'CCCM Dashboard'
+  });
+  
+  // Add title page
+  doc.setFontSize(20);
+  doc.setTextColor(44, 62, 80);
+  doc.text('CCCM Cluster Ethiopia', 105, 40, { align: 'center' });
+  
+  doc.setFontSize(16);
+  doc.setTextColor(27, 101, 124);
+  doc.text('Catchment Area Service Mapping Report', 105, 55, { align: 'center' });
+  
+  doc.setFontSize(12);
+  doc.setTextColor(100, 100, 100);
+  doc.text(`Generated on: ${currentDate}`, 105, 70, { align: 'center' });
+  
+  // Add statistics
+  doc.setFontSize(14);
+  doc.setTextColor(44, 62, 80);
+  doc.text('Summary Statistics', 20, 90);
+  
+  doc.setFontSize(10);
+  doc.setTextColor(80, 80, 80);
+  doc.text(`Total Community Centers: ${document.getElementById('totalLocations').textContent}`, 20, 100);
+  doc.text(`Total Service Providers: ${document.getElementById('totalServices').textContent}`, 20, 107);
+  doc.text(`Total Woredas: ${document.getElementById('serviceSheets').textContent}`, 20, 114);
+  
+  // Add filter information if any filters are applied
+  const activeFilters = [];
+  if (regionFilter) activeFilters.push(`Region: ${regionFilter}`);
+  if (zoneFilter) activeFilters.push(`Zone: ${zoneFilter}`);
+  if (woredaFilter) activeFilters.push(`Woreda: ${woredaFilter}`);
+  if (communityCenterFilter) activeFilters.push(`Community Center: ${communityCenterFilter}`);
+  if (cccmAgencyFilter) activeFilters.push(`CCCM Agency: ${cccmAgencyFilter}`);
+  
+  if (activeFilters.length > 0) {
+    doc.text('Applied Filters:', 20, 125);
+    activeFilters.forEach((filter, index) => {
+      doc.text(`- ${filter}`, 25, 132 + (index * 7));
+    });
+  }
+  
+  // Add page number
+  doc.setFontSize(8);
+  doc.setTextColor(150, 150, 150);
+  doc.text('Page 1', 195, 285, { align: 'right' });
+  
+  // Add a new page for location details
+  doc.addPage();
+  
+  // Add header for location details
+  doc.setFontSize(16);
+  doc.setTextColor(44, 62, 80);
+  doc.text('Community Center Details', 20, 20);
+  
+  let yPosition = 35;
+  let pageNumber = 2;
+  
+  // Get filtered data for export
+  let filteredData = [...mainSheetData];
+  
+  if (regionFilter) {
+    filteredData = filteredData.filter(location => location.Region === regionFilter);
+  }
+  
+  if (zoneFilter) {
+    filteredData = filteredData.filter(location => location.Zone === zoneFilter);
+  }
+  
+  if (woredaFilter) {
+    filteredData = filteredData.filter(location => location.Woreda === woredaFilter);
+  }
+  
+  if (communityCenterFilter) {
+    filteredData = filteredData.filter(location => location['Community Center'] === communityCenterFilter);
+  }
+  
+  if (cccmAgencyFilter) {
+    filteredData = filteredData.filter(location => location['CCCM Agency'] === cccmAgencyFilter);
+  }
+  
+  // Add location details
+  filteredData.forEach((location, index) => {
+    // Check if we need a new page
+    if (yPosition > 250) {
+      doc.addPage();
+      pageNumber++;
+      yPosition = 20;
+      
+      // Add page number
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text(`Page ${pageNumber}`, 195, 285, { align: 'right' });
+      
+      yPosition = 35;
+    }
+    
+    // Add location header
+    doc.setFontSize(12);
+    doc.setTextColor(27, 101, 124);
+    doc.text(`${location['Community Center'] || 'Location ' + location._index}`, 20, yPosition);
+    yPosition += 8;
+    
+    // Add location details
+    doc.setFontSize(10);
+    doc.setTextColor(80, 80, 80);
+    
+    doc.text(`Region: ${location.Region || 'N/A'}`, 20, yPosition);
+    yPosition += 6;
+    
+    doc.text(`Zone: ${location.Zone || 'N/A'}`, 20, yPosition);
+    yPosition += 6;
+    
+    doc.text(`Woreda: ${location.Woreda || 'N/A'}`, 20, yPosition);
+    yPosition += 6;
+    
+    doc.text(`CCCM Agency: ${location['CCCM Agency'] || 'N/A'}`, 20, yPosition);
+    yPosition += 6;
+    
+    if (!isNaN(location._lat) && !isNaN(location._lon)) {
+      doc.text(`Coordinates: ${location._lat.toFixed(6)}, ${location._lon.toFixed(6)}`, 20, yPosition);
+      yPosition += 6;
+    }
+    
+    // Get linked services for this location
+    const linkedServices = getLinkedServices(location);
+    
+    if (linkedServices.length > 0) {
+      // Group services by provider
+      const servicesByProvider = {};
+      linkedServices.forEach(service => {
+        const provider = getOrganizationName(service);
+        if (!servicesByProvider[provider]) {
+          servicesByProvider[provider] = [];
+        }
+        servicesByProvider[provider].push(service);
+      });
+      
+      doc.text(`Service Providers: ${Object.keys(servicesByProvider).length}`, 20, yPosition);
+      yPosition += 8;
+      
+      // Add service provider details
+      Object.keys(servicesByProvider).forEach(provider => {
+        const services = servicesByProvider[provider];
+        
+        // Check if we need a new page
+        if (yPosition > 250) {
+          doc.addPage();
+          pageNumber++;
+          yPosition = 20;
+          
+          // Add page number
+          doc.setFontSize(8);
+          doc.setTextColor(150, 150, 150);
+          doc.text(`Page ${pageNumber}`, 195, 285, { align: 'right' });
+          
+          yPosition = 35;
+        }
+        
+        doc.setFontSize(10);
+        doc.setTextColor(44, 62, 80);
+        doc.text(`- ${provider}`, 25, yPosition);
+        yPosition += 6;
+        
+        services.forEach(service => {
+          const servicesList = service.Services || service.services || service.SERVICES || 
+                              service['If yes, please specify the services'] || service['other services'] || 
+                              service['ACDD'] || 'Not specified';
+          const focalPerson = service['Focal Person Name'] || service['Focal Person'] || service['FOCAL PERSON'] || 'Not specified';
+          const phone = service['Phone Number'] || service['Phone'] || service['PHONE'] || 'Not specified';
+          const coords = parseServiceCoordinates(service);
+          
+          // Check if we need a new page
+          if (yPosition > 250) {
+            doc.addPage();
+            pageNumber++;
+            yPosition = 20;
+            
+            // Add page number
+            doc.setFontSize(8);
+            doc.setTextColor(150, 150, 150);
+            doc.text(`Page ${pageNumber}`, 195, 285, { align: 'right' });
+            
+            yPosition = 35;
+          }
+          
+          doc.setFontSize(9);
+          doc.setTextColor(100, 100, 100);
+          
+          doc.text(`  Services: ${servicesList}`, 30, yPosition);
+          yPosition += 5;
+          
+          doc.text(`  Focal Person: ${focalPerson}`, 30, yPosition);
+          yPosition += 5;
+          
+          doc.text(`  Phone: ${phone}`, 30, yPosition);
+          yPosition += 5;
+          
+          if (!isNaN(coords.lat) && !isNaN(coords.lon)) {
+            doc.text(`  Coordinates: ${coords.lat.toFixed(6)}, ${coords.lon.toFixed(6)}`, 30, yPosition);
+            yPosition += 5;
+          }
+          
+          yPosition += 2; // Add some space between services
+        });
+      });
+    } else {
+      doc.text('No service providers linked to this location', 20, yPosition);
+      yPosition += 6;
+    }
+    
+    yPosition += 10; // Add space between locations
+  });
+  
+  // Add a final page with summary
+  doc.addPage();
+  pageNumber++;
+  
+  doc.setFontSize(16);
+  doc.setTextColor(44, 62, 80);
+  doc.text('Report Summary', 20, 20);
+  
+  doc.setFontSize(10);
+  doc.setTextColor(80, 80, 80);
+  
+  let summaryY = 35;
+  
+  doc.text(`Report Generated: ${currentDate}`, 20, summaryY);
+  summaryY += 8;
+  
+  doc.text(`Total Locations in Report: ${filteredData.length}`, 20, summaryY);
+  summaryY += 8;
+  
+  // Count total service providers in the report
+  let totalProvidersInReport = new Set();
+  filteredData.forEach(location => {
+    const linkedServices = getLinkedServices(location);
+    linkedServices.forEach(service => {
+      const provider = getOrganizationName(service);
+      if (provider && provider !== 'Unknown Provider') {
+        totalProvidersInReport.add(provider);
+      }
+    });
+  });
+  
+  doc.text(`Total Service Providers in Report: ${totalProvidersInReport.size}`, 20, summaryY);
+  summaryY += 8;
+  
+  // Add page number
+  doc.setFontSize(8);
+  doc.setTextColor(150, 150, 150);
+  doc.text(`Page ${pageNumber}`, 195, 285, { align: 'right' });
+  
+  // Save the PDF
+  const fileName = `CCCM_Service_Mapping_Report_${currentDate.replace(/ /g, '_')}.pdf`;
+  doc.save(fileName);
+  
+  hideLoading();
+  showAutoLoadNotification('PDF report generated successfully!');
+}
+
 // Event listeners
 document.addEventListener('DOMContentLoaded', function() {
   // Initialize main map
@@ -4394,6 +4787,13 @@ document.addEventListener('DOMContentLoaded', function() {
   document.getElementById('chartButton').addEventListener('touchstart', function(e) {
     e.preventDefault();
     openChartsModal();
+  }, { passive: false });
+  
+  // PDF Export button
+  document.getElementById('pdfExportBtn').addEventListener('click', exportToPDF);
+  document.getElementById('pdfExportBtn').addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    exportToPDF();
   }, { passive: false });
   
   // Add event delegation for dynamically created elements
@@ -4486,7 +4886,7 @@ window.openSectorDetailModal = openSectorDetailModal;
 window.initializeModalMap = initializeModalMap;
 window.zoomToLocation = zoomToLocation;
 window.openChartsModal = openChartsModal;
+window.exportToPDF = exportToPDF;
 </script>
 </body>
 </html>
-
