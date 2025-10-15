@@ -2148,23 +2148,28 @@ function applyFilters() {
   let filteredData = [...mainSheetData];
   
   if (regionFilter) {
-    filteredData = filteredData.filter(location => location.Region === regionFilter);
+    filteredData = filteredData.filter(location => 
+      String(location.Region).toLowerCase() === String(regionFilter).toLowerCase());
   }
   
   if (zoneFilter) {
-    filteredData = filteredData.filter(location => location.Zone === zoneFilter);
+    filteredData = filteredData.filter(location => 
+      String(location.Zone).toLowerCase() === String(zoneFilter).toLowerCase());
   }
   
   if (woredaFilter) {
-    filteredData = filteredData.filter(location => location.Woreda === woredaFilter);
+    filteredData = filteredData.filter(location => 
+      String(location.Woreda).toLowerCase() === String(woredaFilter).toLowerCase());
   }
   
   if (communityCenterFilter) {
-    filteredData = filteredData.filter(location => location['Community Center'] === communityCenterFilter);
+    filteredData = filteredData.filter(location => 
+      String(location['Community Center']).toLowerCase() === String(communityCenterFilter).toLowerCase());
   }
   
   if (cccmAgencyFilter) {
-    filteredData = filteredData.filter(location => location['CCCM Agency'] === cccmAgencyFilter);
+    filteredData = filteredData.filter(location => 
+      String(location['CCCM Agency']).toLowerCase() === String(cccmAgencyFilter).toLowerCase());
   }
   
   // Update the table with filtered data
@@ -4918,6 +4923,7 @@ window.exportToPDF = exportToPDF;
 </script>
 </body>
 </html>
+
 
 
 
