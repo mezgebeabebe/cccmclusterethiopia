@@ -1976,6 +1976,14 @@ const modalColumnConfig = [
     visible: true,
     key: 'Phone Number'
   },
+
+ { 
+    id: 'email',
+    title: 'Email Address', 
+    visible: true,
+    key: 'Email'
+  },
+   
   { 
     id: 'coordinates',
     title: 'Coordinates', 
@@ -4086,6 +4094,17 @@ function renderServiceCategory(containerId, servicesBySheet, categoryName) {
           </div>
         `;
       }
+
+       // EMAIL - ADD THIS SECTION RIGHT HERE
+if (modalColumnConfig.find(col => col.id === 'email').visible) {
+  const email = service['Email'] || service['email'] || service['EMAIL'] || 'Not specified';
+  serviceDetailsHTML += `
+    <div class="service-detail">
+      <span class="detail-key">Email:</span>
+      <span class="detail-value">${email}</span>
+    </div>
+  `;
+}
       
       // Coordinates
       if (modalColumnConfig.find(col => col.id === 'coordinates').visible && !isNaN(coords.lat) && !isNaN(coords.lon)) {
@@ -4899,5 +4918,6 @@ window.exportToPDF = exportToPDF;
 </script>
 </body>
 </html>
+
 
 
